@@ -190,3 +190,67 @@
   ```
 
 This flow ensures a holistic view: DB for structured links/stats, RAG for content depth, LLM for smart refinement. Implement iteration as a simple loop in Go with a counter.
+
+# Tasks:
+
+### Shortened GitHub Issues List
+
+1. **Setup Monorepo Structure**  
+   Create root folders (backend, frontend, python, etc.) with .gitignore and README.
+
+2. **Configure Docker Compose**  
+   Write docker-compose.yml for all services (MySQL, Chroma, Ollama, backend, frontend, python).
+
+3. **Set Up MySQL Schema**  
+   Implement minimal tables (components, risks, issues, tests) with JSON tags in db/init.sql.
+
+4. **Configure .env File**  
+   Add template for secrets like DB creds, Ollama URL, and API keys.
+
+5. **Implement Go DTOs/Models**  
+   Define structs (Component, Risk, etc.) with tags in backend/db/models.go using GORM.
+
+6. **DB Connection/Migrations**  
+   Add GORM setup in backend/db to connect and auto-migrate schema.
+
+7. **Build Ollama Wrapper**  
+   Create service in backend/services/ollama.go for tag extraction and embeddings.
+
+8. **Ingestion Services**  
+   Add Jira/Notion fetchers in backend/services/ingestion to sanitize and insert data.
+
+9. **RAG Pipeline in Go**  
+   Handle chunking/embedding/upsert to Chroma in backend/services/rag.
+
+10. **API Handlers for Analysis**  
+    Add /analyze endpoint in backend/api for tag extraction, DB queries, RAG, and output.
+
+11. **Python Chunker Service**  
+    Set up FastAPI in python/app.py with /chunk endpoint using LlamaIndex.
+
+12. **Integrate Python with Go**  
+    Add HTTP calls from Go rag service to Python chunker.
+
+13. **React App Basics**  
+    Initialize frontend with routing and basic dashboard page.
+
+14. **Query Input Form**  
+    Create React form component to send queries to backend /analyze.
+
+15. **Output Display**  
+    Render holistic JSON as UI sections (risks, components, issues, tests).
+
+16. **Review Queue UI**  
+    Build page for approving/editing suggested tags/chunks.
+
+17. **Unit/Integration Tests**  
+    Add tests for backend services/API and frontend components.
+
+18. **Project Documentation**  
+    Update README with architecture, setup, and API details.
+
+19. **CI/CD Pipeline**  
+    Add GitHub Actions for build, test, and deploy.
+
+20. **Logging/Monitoring**  
+    Implement basic logging in backend and monitor Docker services.
