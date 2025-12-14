@@ -1,0 +1,142 @@
+[
+  {
+    "id": "ISSUE-1",
+    "title": "Login fails with invalid password",
+    "description": "When user enters incorrect password, system crashes instead of showing error message. Affects frontend.",
+    "issueType": "Bug",
+    "components": ["Console", "BigRedButton"]
+  },
+  {
+    "id": "ISSUE-2",
+    "title": "Payment processing error",
+    "description": "Payment fails when using credit card with expired date. No error message displayed.",
+    "issueType": "Bug",
+    "components": ["Jenkins", "Builds", "ACLOS"]
+  },
+  {
+    "id": "ISSUE-3",
+    "title": "User profile image not loading",
+    "description": "Profile pictures fail to load after recent deployment. Console shows 404 errors for image URLs.",
+    "issueType": "Bug",
+    "components": ["Console"]
+  },
+  {
+    "id": "ISSUE-4",
+    "title": "API timeout during data export",
+    "description": "CSV export requests timeout after 5 minutes for large datasets. No progress indicator shown.",
+    "issueType": "Bug",
+    "components": ["LOC", "HotFixing"]
+  },
+  {
+    "id": "ISSUE-5",
+    "title": "Mobile app crashes on startup",
+    "description": "Android version 3.1.4 crashes immediately after splash screen on Pixel 6 devices.",
+    "issueType": "Bug",
+    "components": ["China", "Jenkins"]
+  },
+  {
+    "id": "ISSUE-6",
+    "title": "Search results pagination broken",
+    "description": "Clicking page 2 of search results displays empty list. Pagination controls remain active.",
+    "issueType": "Bug",
+    "components": ["BigRedButton", "Console", "LOC"]
+  },
+  {
+    "id": "ISSUE-7",
+    "title": "Email notifications not sent",
+    "description": "Users not receiving password reset emails. SMTP connection times out after 30 seconds.",
+    "issueType": "Bug",
+    "components": ["HotFixing"]
+  },
+  {
+    "id": "ISSUE-8",
+    "title": "Date picker displays wrong timezone",
+    "description": "Calendar widget shows UTC times instead of local timezone. Affects event scheduling.",
+    "issueType": "Bug",
+    "components": ["Jenkins", "Builds"]
+  },
+  {
+    "id": "ISSUE-9",
+    "title": "Database connection leaks",
+    "description": "Connection pool exhausted after 2 hours of normal use. Requires server restart.",
+    "issueType": "Bug",
+    "components": ["ACLOS", "China", "Console"]
+  },
+  {
+    "id": "ISSUE-10",
+    "title": "PDF export formatting issues",
+    "description": "Tables overflow page margins in generated PDF reports. Affects all Chrome users.",
+    "issueType": "Bug",
+    "components": ["LOC"]
+  },
+  {
+    "id": "ISSUE-11",
+    "title": "Cache invalidation failure",
+    "description": "Updated product prices not reflecting until cache manually cleared. Occurs in 30% of cases.",
+    "issueType": "Bug",
+    "components": ["BigRedButton", "HotFixing"]
+  },
+  {
+    "id": "ISSUE-12",
+    "title": "iOS push notifications delayed",
+    "description": "Notifications arrive 15-20 minutes after trigger event. APNs connection unstable.",
+    "issueType": "Bug",
+    "components": ["China"]
+  },
+  {
+    "id": "ISSUE-13",
+    "title": "Password complexity rules too strict",
+    "description": "Special character requirement blocking valid passwords. Error message unclear.",
+    "issueType": "Bug",
+    "components": ["Console", "ACLOS", "Jenkins"]
+  },
+  {
+    "id": "ISSUE-14",
+    "title": "Order history sorting broken",
+    "description": "Recent orders not appearing first when sorted by date. Database query returns unsorted.",
+    "issueType": "Bug",
+    "components": ["Builds", "LOC"]
+  },
+  {
+    "id": "ISSUE-15",
+    "title": "Memory leak in image processing",
+    "description": "Server memory usage grows 2% per hour when processing PNG files. Critical after 48 hours.",
+    "issueType": "Bug",
+    "components": ["HotFixing", "China", "BigRedButton"]
+  },
+  {
+    "id": "ISSUE-16",
+    "title": "Dark mode toggle not persistent",
+    "description": "UI reverts to light mode after page refresh. Cookie settings not saved.",
+    "issueType": "Bug",
+    "components": ["Console"]
+  },
+  {
+    "id": "ISSUE-17",
+    "title": "Currency conversion rounding errors",
+    "description": "USD to EUR conversions off by ±0.01€ in checkout totals. Affects 5% of transactions.",
+    "issueType": "Bug",
+    "components": ["ACLOS", "Jenkins"]
+  },
+  {
+    "id": "ISSUE-18",
+    "title": "API rate limiting too aggressive",
+    "description": "Legitimate users getting 429 errors after 10 requests/minute. Needs dynamic adjustment.",
+    "issueType": "Bug",
+    "components": ["Builds", "HotFixing", "LOC"]
+  },
+  {
+    "id": "ISSUE-19",
+    "title": "Drag-and-drop upload fails",
+    "description": "Files over 50MB cause silent failure in Chrome. Console shows CORS errors.",
+    "issueType": "Bug",
+    "components": ["BigRedButton", "China"]
+  },
+  {
+    "id": "ISSUE-20",
+    "title": "Session timeout too short",
+    "description": "Users logged out after 5 minutes of inactivity. Should be 30 minutes per policy.",
+    "issueType": "Bug",
+    "components": ["Jenkins"]
+  }
+]

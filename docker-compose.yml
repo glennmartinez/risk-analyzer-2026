@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: risk_analyzer_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: risk_analyzer
+      MYSQL_USER: risk_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-risk_pass}
+    ports:
+      - "3307:3306"  # Use non-standard port externally to avoid conflicts
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql  # Optional init script
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build: .
+    container_name: risk_analyzer_go
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: risk_user
+      DB_PASSWORD: ${MYSQL_PASSWORD:-risk_pass}
+      DB_DATABASE: risk_analyzer
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./config:/root/config
+
+volumes:
+  mysql_data:
