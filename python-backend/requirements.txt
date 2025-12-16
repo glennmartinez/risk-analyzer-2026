@@ -1,0 +1,27 @@
+# Document Processing Microservice - Dependencies
+# Python 3.10+ required
+
+# Web framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Configuration
+pydantic
+pydantic-settings
+
+# Document parsing - Docling
+docling
+
+# Chunking and RAG - LlamaIndex
+llama-index-core
+
+# Vector database
+chromadb
+
+# Embeddings
+sentence-transformers
+
+# Utilities
+httpx
+python-dotenv

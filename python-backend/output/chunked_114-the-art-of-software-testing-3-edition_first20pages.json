@@ -1,0 +1,580 @@
+{
+  "metadata": {
+    "source_file": "114-the-art-of-software-testing-3-edition_first20pages.json",
+    "chunked_at": "2025-12-17T03:00:36.025346",
+    "processing_time_seconds": 1.429468,
+    "chunk_size": 512,
+    "chunk_overlap": 50,
+    "total_chunks": 15,
+    "original_text_length": 23403,
+    "enrichment": {
+      "keywords_extracted": true,
+      "page_numbers": true,
+      "section_headers": true
+    }
+  },
+  "global_keywords": [
+    {
+      "keyword": "Page",
+      "count": 11
+    },
+    {
+      "keyword": "testing",
+      "count": 4
+    },
+    {
+      "keyword": "test",
+      "count": 4
+    },
+    {
+      "keyword": "Testing",
+      "count": 3
+    },
+    {
+      "keyword": "test cases",
+      "count": 3
+    },
+    {
+      "keyword": "program",
+      "count": 3
+    },
+    {
+      "keyword": "software testing",
+      "count": 2
+    },
+    {
+      "keyword": "software",
+      "count": 2
+    },
+    {
+      "keyword": "test case",
+      "count": 2
+    },
+    {
+      "keyword": "SOFTWARE TESTING",
+      "count": 1
+    },
+    {
+      "keyword": "Edition GLENFORD",
+      "count": 1
+    },
+    {
+      "keyword": "FFIRS",
+      "count": 1
+    },
+    {
+      "keyword": "John Wiley",
+      "count": 1
+    },
+    {
+      "keyword": "sales materials",
+      "count": 1
+    },
+    {
+      "keyword": "sales representatives",
+      "count": 1
+    },
+    {
+      "keyword": "written sales",
+      "count": 1
+    },
+    {
+      "keyword": "United States",
+      "count": 1
+    },
+    {
+      "keyword": "ISBN",
+      "count": 1
+    },
+    {
+      "keyword": "III",
+      "count": 1
+    },
+    {
+      "keyword": "Program Inspections",
+      "count": 1
+    }
+  ],
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "text": "FFIRS 08/25/2011 11:31:15 Page 2\n\nFFIRS 08/25/2011 11:31:15 Page 1\nTHE ART OF\nSOFTWARE\nTESTING\n\nFFIRS 08/25/2011 11:31:15 Page 2\n\nFFIRS 08/25/2011 11:31:15 Page 3\nTHE ART OF\nSOFTWARE\nTESTING\nThird Edition\nGLENFORD J. MYERS\nTOM BADGETT\nCOREY SANDLER\nJohn Wiley & Sons, Inc.\n\nFFIRS 08/25/2011 11:31:15 Page 4\nCopyright #2012 by Word Association, Inc. All rights reserved.\nPublished by John Wiley & Sons, Inc., Hoboken, New Jersey.\nPublished simultaneously in Canada.\nNo part of this publication may be reproduced, stored in a retrieval system, or transmitted in\nany form or by any means, electronic, mechanical, photocopying, recording, scanning, or\notherwise, except as permitted under Section 107 or 108 of the 1976 United States\nCopyright Act, without either the prior written permission of the Publisher, or authorization\nthrough payment of the appropriate per-copy fee to the Copyright Clearance Center, Inc.,\n222 Rosewood Drive, Danvers, MA 01923, (978) 750-8400, fax (978) 646-8600, or on the\nweb at www.copyright.com. Requests to the Publisher for permission should be addressed\nto the Permissions Department, John Wiley & Sons, Inc., 111 River Street, Hoboken, NJ\n07030, (201) 748-6011, fax (201) 748-6008, or online at www.wiley.com/go/permissions.\nLimit of Liability/Disclaimer of Warranty: While the publisher and author have used their\nbest efforts in preparing this book, they make no representations or warranties with respect\nto the accuracy or completeness of the contents of this book and speciﬁcally disclaim any\nimplied warranties of merchantability or ﬁtness for a particular purpose.",
+      "char_count": 1603,
+      "token_estimate": 400,
+      "page_number": 1,
+      "section_header": null,
+      "keywords": [
+        {
+          "keyword": "SOFTWARE TESTING",
+          "score": 0.998
+        },
+        {
+          "keyword": "Page",
+          "score": 0.996
+        },
+        {
+          "keyword": "Edition GLENFORD",
+          "score": 0.995
+        },
+        {
+          "keyword": "FFIRS",
+          "score": 0.985
+        },
+        {
+          "keyword": "John Wiley",
+          "score": 0.981
+        }
+      ],
+      "start_char": 0,
+      "end_char": 1695
+    },
+    {
+      "chunk_id": 1,
+      "text": "No warranty may\nbe created or extended by sales representatives or written sales materials. The advice and\nstrategies contained herein may not be suitable for your situation. You should consult with a\nprofessional where appropriate. Neither the publisher nor author shall be liable for any loss\nof proﬁt or any other commercial damages, including but not limited to special, incidental,\nconsequential, or other damages.\nFor general information on our other products and services or for technical support, please\ncontact our Customer Care Department within the United States at (800) 762-2974, outside\nthe United States at (317) 572-3993 or fax (317) 572-4002.\nWiley also publishes its books in a variety of electronic formats. Some content that appears\nin print may not be available in electronic books. For more information about Wiley\nproducts, visit our website at www.wiley.com.\nLibrary of Congress Cataloging-in-Publication Data:\nMyers, Glenford J., 1946-\nThe art of software testing / Glenford J. Myers, Corey Sandler, Tom Badgett. — 3rd ed.\np. cm.\nIncludes index.\nISBN 978-1-118-03196-4 (cloth); ISBN 978-1-118-13313-2 (ebk); ISBN 978-1-118-13314-9\n(ebk); ISBN 978-1-118-13315-6 (ebk)\n1. Computer software—Testing. 2. Debugging in computer science. I. Sandler,\nCorey , 1950- II. Badgett, Tom. III. Title.\nQA76.76.T48M894 2011\n005.1\n04—dc23\n2011017548\nPrinted in the United States of America\n1 0987654321",
+      "char_count": 1410,
+      "token_estimate": 352,
+      "page_number": 6,
+      "section_header": "No warranty may",
+      "keywords": [
+        {
+          "keyword": "sales materials",
+          "score": 0.965
+        },
+        {
+          "keyword": "sales representatives",
+          "score": 0.957
+        },
+        {
+          "keyword": "written sales",
+          "score": 0.957
+        },
+        {
+          "keyword": "United States",
+          "score": 0.956
+        },
+        {
+          "keyword": "ISBN",
+          "score": 0.95
+        }
+      ],
+      "start_char": 1696,
+      "end_char": 3106
+    },
+    {
+      "chunk_id": 2,
+      "text": "III. Title.\nQA76.76.T48M894 2011\n005.1\n04—dc23\n2011017548\nPrinted in the United States of America\n1 0987654321\n\nFTOC 08/25/2011 11:33:28 Page 5\nContents\nPreface vii\nIntroduction ix\n1 A Self-Assessment Test 1\n2 The Psychology and Economics of Software Testing 5\n3 Program Inspections, Walkthroughs, and Reviews 19\n4 Test-Case Design 41\n5 Module (Unit) Testing 85\n6 Higher-Order Testing 113\n7 Usability (User) Testing 143\n8 Debugging 157\n9 Testing in the Agile Environment 175\n10 Testing Internet Applications 193\n11 Mobile Application Testing 213\nAppendix Sample Extreme Testing Application 227\nIndex 233\nv\n\nFTOC 08/25/2011 11:33:28 Page 6",
+      "char_count": 638,
+      "token_estimate": 159,
+      "page_number": 7,
+      "section_header": "No warranty may",
+      "keywords": [
+        {
+          "keyword": "Page",
+          "score": 0.971
+        },
+        {
+          "keyword": "Testing",
+          "score": 0.966
+        },
+        {
+          "keyword": "III",
+          "score": 0.949
+        },
+        {
+          "keyword": "Program Inspections",
+          "score": 0.937
+        },
+        {
+          "keyword": "Mobile Application",
+          "score": 0.932
+        }
+      ],
+      "start_char": 2996,
+      "end_char": 3664
+    },
+    {
+      "chunk_id": 3,
+      "text": "FPREF 08/08/2011 17:19:4 Page 7\nPreface\nI\nn 1979, Glenford Myers published a book that turned out to be a classic.\nThe Art of Software Testinghas stood the test of time—25 years on the\npublisher’s list of available books. This fact alone is a testament to the\nsolid, essential, and valuable nature of his work.\nDuring that same time, the authors of this edition (the third) of The Art\nof Software Testingpublished, collectively , more than 200 books, most of\nthem on computer software topics. Some of these titles sold very well and,\nlike this one, have gone through multiple versions. Corey Sandler’s Fix\nYour Own PC, for example, is in its eighth edition as this book goes to\npress; and Tom Badgett’s books on Microsoft PowerPoint and other Ofﬁce\ntitles have gone through four or more editions. However, unlike Myers’s\nbook, none of these remained current for more than a few years.\nWhat is the difference? The new er books covered more transient\ntopics—operating systems, applicat ions software, security , communica-\ntions technology , and hardware conﬁgurations. Rapid changes in computer\nhardware and software technology during the 1980s and 1990s necessi-\ntated frequent changes and updates to these topics.\nAlso during that period hundreds of books about software testing were\npublished. They , too, took a more transient approach to the topic. The Art\nof Software Testing alone gave the industry a long-lasting, foundational\nguide to one of the most important computer topics: How do you ensure\nthat all of the software you produce does what it was designed to do, and—\njust as important—doesn’t do what it isn’t supposed to do?\nThe edition you are reading today retains the foundational philosophy\nlaid by Myers more than three decades ago. But we have updated the\nexamples to include more current programming languages, and we have\naddressed topics that were not yet topics when Myers wrote the ﬁrst\nedition: Web programming, e-commerce, Extreme (Agile) programming\nand testing, and testing applications for mobile devices.\nvii",
+      "char_count": 2038,
+      "token_estimate": 509,
+      "page_number": 9,
+      "section_header": "Preface",
+      "keywords": [
+        {
+          "keyword": "Glenford Myers",
+          "score": 0.979
+        },
+        {
+          "keyword": "Page",
+          "score": 0.977
+        },
+        {
+          "keyword": "Software",
+          "score": 0.958
+        },
+        {
+          "keyword": "FPREF",
+          "score": 0.939
+        },
+        {
+          "keyword": "Preface",
+          "score": 0.935
+        }
+      ],
+      "start_char": 3666,
+      "end_char": 5719
+    },
+    {
+      "chunk_id": 4,
+      "text": "FPREF 08/08/2011 17:19:4 Page 8\nAlong the way , we never lost sight of the fact that a new classic must stay\ntrue to its roots, so our version also offers you a software testing philoso-\nphy , and a process that works across current and unforeseeable future\nhardware and software platforms. We hope that the third edition of The\nArt of Software Testing, too, will span a generation of software designers\nand developers.\nviii Preface",
+      "char_count": 432,
+      "token_estimate": 108,
+      "page_number": 10,
+      "section_header": "Preface",
+      "keywords": [
+        {
+          "keyword": "Page",
+          "score": 0.983
+        },
+        {
+          "keyword": "software testing",
+          "score": 0.974
+        },
+        {
+          "keyword": "testing philoso",
+          "score": 0.973
+        },
+        {
+          "keyword": "lost sight",
+          "score": 0.964
+        },
+        {
+          "keyword": "stay true",
+          "score": 0.964
+        }
+      ],
+      "start_char": 5721,
+      "end_char": 6169
+    },
+    {
+      "chunk_id": 5,
+      "text": "CINTRO 08/08/2011 17:23:34 Page 9\nIntroduction\nA\nt the time this book was ﬁrst published, in 1979, it was a well-known\nrule of thumb that in a typical programming project approximately\n50 percent of the elapsed time and more than 50 percent of the total cost\nwere expended in testing the program or system being developed.\nToday , a third of a century and two book updates later, the same holds\ntrue. There are new development systems, languages with built-in tools,\nand programmers who are used to developing more on the ﬂy . But testing\ncontinues to play an important part in any software development project.\nGiven these facts, you might expect that by this time program testing\nwould have been reﬁned into an exact science. This is far from the case. In\nfact, less seems to be known about software testing than about any other\naspect of software development. Furthermore, testing has been an out-of-\nvogue subject; it was so when this book was ﬁrst published and, un-\nfortunately , this has not changed. Today thereare more books and articles\nabout software testing—meaning that, at least, the topic has greater visibil-\nity than it did when this book was ﬁrst published—but testing remains\namong the ‘‘dark arts’’ of software development.\nThis would be more than enough reason to update this book on the art\nof software testing, but we have additional motivations. At various times,\nwe have heard professors and teaching assistants say , ‘‘Our students gradu-\nate and move into industry without any substantial knowledge of how to\ngo about testing a program. Moreover, we rarely have any advice to offer\nin our introductory courses on how a student should go about testing and\ndebugging his or her exercises.’’\nThus, the purpose of this updated edition ofThe Art of Software Testing\nis the same as it was in 1979 and in 2004: to ﬁll these knowledge gaps for\nthe professional programmer and the student of computer science. As the\ntitle implies, the book is a practical, rather than theoretical, discussion of\nthe subject, complete with updated language and process discussions.\nix",
+      "char_count": 2085,
+      "token_estimate": 521,
+      "page_number": 11,
+      "section_header": "Introduction",
+      "keywords": [
+        {
+          "keyword": "Page",
+          "score": 0.977
+        },
+        {
+          "keyword": "software testing",
+          "score": 0.968
+        },
+        {
+          "keyword": "testing",
+          "score": 0.966
+        },
+        {
+          "keyword": "software",
+          "score": 0.957
+        },
+        {
+          "keyword": "well-known rule",
+          "score": 0.951
+        }
+      ],
+      "start_char": 6171,
+      "end_char": 8272
+    },
+    {
+      "chunk_id": 6,
+      "text": "CINTRO 08/08/2011 17:23:35 Page 10\nAlthough it is possible to discuss program testing in a theoretical vein, this\nbook is intended to be a practical, ‘‘both feet on the ground’’ handbook.\nHence, many subjects related to program testing, such as the idea of math-\nematically proving the correctnes s of a program, were purposefully\nexcluded.\nChapter 1 ‘‘assigns’’ a short self-assessment test that every reader should\ntake before reading further. It turns out that the most important practical\ninformation you must understand about program testing is a set of philo-\nsophical and economic issues; these are discussed in Chapter 2. Chapter 3\nintroduces the important concept of noncomputer-based code walk-\nthroughs, or inspections. Rather than focus attention on the procedural or\nmanagerial aspects of this concept, as most such discussions do, this chap-\nter addresses it from a technical, how-to-ﬁnd-errors point of view .\nThe alert reader will realize that the most important component in a\nprogram tester’s bag of tricks is the knowledge of how to write effective\ntest cases; this is the subject of Chapter 3. Chapter 4 discusses the testing\nof individual modules or subroutines, followed in Chapter 5 by the testing\nof larger entities. Chapter 6 takes on the concept of user or usability test-\ning, a component of software testing that always has been important, but is\neven more relevant today due to the advent of more complex software\ntargeted at an ever broadening audience. Chapter 7 offers some practical\nadvice on program debugging, while Chapter 8 delves into the concepts of\nextreme programming testing with emphasis on what has come to be\ncalled the ‘‘agile environment.’’ Chapter 9 shows how to use other features\nof program testing, which are detailed elsewhere in this book, with Web\nprogramming, including e-commerce systems, and the all new , highly in-\nteractive social networking sites. Chapter 10 describes how to test software\ndeveloped for the mobile environment.\nWe direct this book at three major audiences. First, the professional\nprogrammer.",
+      "char_count": 2070,
+      "token_estimate": 517,
+      "page_number": 12,
+      "section_header": "Introduction",
+      "keywords": [
+        {
+          "keyword": "Chapter",
+          "score": 0.983
+        },
+        {
+          "keyword": "Page",
+          "score": 0.978
+        },
+        {
+          "keyword": "program testing",
+          "score": 0.972
+        },
+        {
+          "keyword": "theoretical vein",
+          "score": 0.96
+        },
+        {
+          "keyword": "testing",
+          "score": 0.959
+        }
+      ],
+      "start_char": 8274,
+      "end_char": 10360
+    },
+    {
+      "chunk_id": 7,
+      "text": "Chapter 10 describes how to test software\ndeveloped for the mobile environment.\nWe direct this book at three major audiences. First, the professional\nprogrammer. Although we hope that not everything in this book will be\nnew information to this audience, we believe it will add to the profes-\nsional’s knowledge of testing techniques. If the material allows this group\nto detect just one more bug in one program, the price of the book will have\nbeen recovered many times over.\nThe second audience is the project manager, who will beneﬁt from the\nbook’s practical information on the management of the testing process.\nThe third audience is the programming and computer science student,\nand our goal for them is twofold: to expose them to the problems of\nx Introduction\n\nCINTRO 08/08/2011 17:23:35 Page 11\nprogram testing, and provide a set of effective techniques. For this third\ngroup, we suggest the book be used as a supplement in programming\ncourses such that students are exposed to the subject of software testing\nearly in their education.\nIntroduction xi\n\nCINTRO 08/08/2011 17:23:35 Page 12",
+      "char_count": 1095,
+      "token_estimate": 273,
+      "page_number": 13,
+      "section_header": "Chapter 10 describes how to test software",
+      "keywords": [
+        {
+          "keyword": "mobile environment",
+          "score": 0.97
+        },
+        {
+          "keyword": "Page",
+          "score": 0.953
+        },
+        {
+          "keyword": "book",
+          "score": 0.937
+        },
+        {
+          "keyword": "test software",
+          "score": 0.908
+        },
+        {
+          "keyword": "software developed",
+          "score": 0.908
+        }
+      ],
+      "start_char": 10199,
+      "end_char": 11326
+    },
+    {
+      "chunk_id": 8,
+      "text": "CINTRO 08/08/2011 17:23:35 Page 12\n\nC01 08/11/2011 11:29:16 Page 1\n1\nA Self-Assessment\nTest\nS\nince this book was ﬁrst published over 30 years ago, software testing\nhas become more difﬁcult and easier than ever.\nSoftware testing is more difﬁcult because of the vast array of program-\nming languages, operating systems, and hardware platforms that have\nevolved in the intervening decades. And while relatively few people used\ncomputers in the 1970s, today virtually no one can complete a day’s work\nwithout using a computer. Not only do computers exist on your desk, but\na ‘‘computer,’’ and consequently software, is present in almost every device\nwe use. Just try to think of the devices today that society relies on that are\nnot software driven. Sure there are some—hammers and wheelbarrows\ncome to mind—but the vast majority use some form of software to operate.\nSoftware is pervasive, which raises the value of testing it. The machines\nthemselves are hundreds of times more powerful, and smaller, than those\nearly devices, and today’s concept of ‘‘computer’’ is much broader and\nmore difﬁcult to deﬁne. Televisions, telephones, gaming systems, and auto-\nmobiles all contain computers and computer software, and in some cases\ncan even be considered computers themselves.\nTherefore, the software we write today potentially touches millions of\npeople, either enabling them to do their jobs effectively and efﬁciently , or\ncausing them untold frustration and costing them in the form of lost work\nor lost business. This is not to say that software is more important today\nthan it was when the ﬁrst edition of this book was published, but it is safe\nto say that computers—and the software that drives them—certainly affect\nmore people and more businesses now than ever before.\n1",
+      "char_count": 1775,
+      "token_estimate": 443,
+      "page_number": 14,
+      "section_header": "Chapter 10 describes how to test software",
+      "keywords": [
+        {
+          "keyword": "Page",
+          "score": 0.993
+        },
+        {
+          "keyword": "Self-Assessment Test",
+          "score": 0.984
+        },
+        {
+          "keyword": "years ago",
+          "score": 0.959
+        },
+        {
+          "keyword": "software",
+          "score": 0.957
+        },
+        {
+          "keyword": "CINTRO",
+          "score": 0.938
+        }
+      ],
+      "start_char": 11276,
+      "end_char": 13083
+    },
+    {
+      "chunk_id": 9,
+      "text": "C01 08/11/2011 11:29:16 Page 2\nSoftware testing is easier, too, in some ways, because the array of soft-\nware and operating systems is much more sophisticated than in the past,\nproviding intrinsic, well-tested routines that can be incorporated into\napplications without the need for a programmer to develop them from\nscratch. Graphical User Interfaces (GUIs), for example, can be built from a\ndevelopment language’s libraries, and since they are preprogrammed ob-\njects that have been debugged and tested previously , the need for testing\nthem as part of a custom application is much reduced.\nAnd, despite the plethora of software testing tomes available on the\nmarket today , many developers seem to have an attitude that is counter\nto extensive testing. Better development tools, pretested GUIs, and the\npressure of tight deadlines in an ever more complex development envi-\nronment can lead to avoidance of all but the most obvious testing\nprotocols. Whereas low-level impacts of bugs may only inconvenience\nthe end user, the worst impacts can result in large ﬁnancial loses, or even\ncause harm to people. The procedures in this book can help designers,\ndevelopers, and project managers better understand the value of compre-\nhensive testing, and provide guidelines to help them achieve required\ntesting goals.\nSoftware testing is a process, or a series of processes, designed to make\nsure computer code does what it was designed to do and, conversely , that it\ndoes not do anything unintended. Software should be predictable and con-\nsistent, presenting no surprises to users. In this book, we will look at many\napproaches to achieving this goal.\nNow , before we start the book, we’d like you to take a short exam. We\nwant you to write a set of test cases—speciﬁc sets of data—to test properly\na relatively simple program. Create a set of test data for the program—data\nthe program must handle correctly to be considered a successful program.\nHere’s a description of the program:\nThe program reads three integer values from an input dialog. The\nthree values represent the lengths of the sides of a triangle.",
+      "char_count": 2110,
+      "token_estimate": 527,
+      "page_number": 16,
+      "section_header": "Chapter 10 describes how to test software",
+      "keywords": [
+        {
+          "keyword": "Page",
+          "score": 0.979
+        },
+        {
+          "keyword": "providing intrinsic",
+          "score": 0.972
+        },
+        {
+          "keyword": "Software testing",
+          "score": 0.972
+        },
+        {
+          "keyword": "well-tested routines",
+          "score": 0.97
+        },
+        {
+          "keyword": "testing",
+          "score": 0.968
+        }
+      ],
+      "start_char": 13085,
+      "end_char": 15211
+    },
+    {
+      "chunk_id": 10,
+      "text": "Here’s a description of the program:\nThe program reads three integer values from an input dialog. The\nthree values represent the lengths of the sides of a triangle. The pro-\ngram displays a message that states whether the triangle is scalene,\nisosceles, or equilateral.\nRemember that a scalene triangle is one where no two sides are equal,\nwhereas an isosceles triangle has two equal sides, and an equilateral\ntriangle has three sides of equal length. Moreover, the angles opposite the\n2 The Art of Software Testing\n\nC01 08/11/2011 11:29:16 Page 3\nequal sides in an isosceles triangle also are equal (it also follows that the\ns i d e so p p o s i t ee q u a la n g l e si nat r i a n g l ea r ee q u a l ) ,a n da l la n g l e si na n\nequilateral triangle are equal.\nEvaluate your set of test cases by using it to answer the following\nquestions. Give yourself one point for each yes answer.\n1. Do you have a test case that represents avalid scalene triangle?\n(Note that test cases such as 1, 2, 3 and 2, 5, 10 do not warrant a yes\nanswer because a triangle having these dimensions is not valid.)\n2. Do you have a test case that represents a valid equilateral triangle?\n3. Do you have a test case that represents a valid isosceles triangle?\n(Note that a test case representing 2, 2, 4 would not count because it\nis not a valid triangle.)\n4. Do you have at least three test cases that represent valid isosceles\ntriangles such that you have tried all three permutations of two equal\nsides (such as, 3, 3, 4; 3, 4, 3; and 4, 3, 3)?\n5. Do you have a test case in which one side has a zero value?\n6. Do you have a test case in which one side has a negative value?\n7.",
+      "char_count": 1660,
+      "token_estimate": 415,
+      "page_number": 17,
+      "section_header": "Chapter 10 describes how to test software",
+      "keywords": [
+        {
+          "keyword": "test case",
+          "score": 0.97
+        },
+        {
+          "keyword": "triangle",
+          "score": 0.963
+        },
+        {
+          "keyword": "test",
+          "score": 0.958
+        },
+        {
+          "keyword": "test cases",
+          "score": 0.94
+        },
+        {
+          "keyword": "equal",
+          "score": 0.939
+        }
+      ],
+      "start_char": 15047,
+      "end_char": 16723
+    },
+    {
+      "chunk_id": 11,
+      "text": "5. Do you have a test case in which one side has a zero value?\n6. Do you have a test case in which one side has a negative value?\n7. Do you have a test case with three integers greater than zero such that\nthe sum of two of the numbers is equal to the third? (That is, if the\nprogram said that 1, 2, 3 represents a scalene triangle, it would contain\nab u g . )\n8. Do you have at least three test cases in category 7 such that you have\ntried all three permutations where the length of one side is equal to\nthe sum of the lengths of the other two sides (e.g., 1, 2, 3; 1, 3, 2; and\n3, 1, 2)?\n9. Do you have a test case with three integers greater than zero such that\nthe sum of two of the numbers is less than the third (such as 1, 2, 4 or\n12, 15, 30)?\n10. Do you have at least three test cases in category 9 such that you have\ntried all three permutations (e.g., 1, 2, 4; 1, 4, 2; and 4, 1, 2)?\n11. Do you have a test case in which all sides are zero (0, 0, 0)?\n12. Do you have at least one test case specifying noninteger values\n(such as 2.5, 3.5, 5.5)?\n13. Do you have at least one test case specifying the wrong number of\nvalues (two rather than three integers, for example)?\n14. For each test case did you specify the expected output from the\nprogram in addition to the input values?\nA Self-Assessment Test 3",
+      "char_count": 1310,
+      "token_estimate": 327,
+      "page_number": 17,
+      "section_header": "5. Do you have a test case in which one side has a zero value?",
+      "keywords": [
+        {
+          "keyword": "test case",
+          "score": 0.984
+        },
+        {
+          "keyword": "test",
+          "score": 0.97
+        },
+        {
+          "keyword": "case",
+          "score": 0.956
+        },
+        {
+          "keyword": "test cases",
+          "score": 0.936
+        },
+        {
+          "keyword": "side",
+          "score": 0.831
+        }
+      ],
+      "start_char": 16591,
+      "end_char": 17901
+    },
+    {
+      "chunk_id": 12,
+      "text": "14. For each test case did you specify the expected output from the\nprogram in addition to the input values?\nA Self-Assessment Test 3\n\nC01 08/11/2011 11:29:16 Page 4\nOf course, a set of test cases that satisﬁes these conditions does not guar-\nantee that you will ﬁnd all possible errors, but since questions 1 through\n13 represent errors that actually have occurred in different versions of this\nprogram, an adequate test of this program should expose at least these\nerrors.\nNow , before you become concerned about your score, consider this: In\nour experience, highly qualiﬁed professional programmers score, on the\naverage, only 7.8 out of a possible 14. If you’ve done better, congratula-\ntions; if not, we’re here to help.\nThe point of the exercise is to illustrate that the testing of even a trivial\nprogram such as this is not an easy task. Given this is true, consider the difﬁ-\nculty of testing a 100,000-statement air trafﬁc control system, a compiler, or\neven a mundane payroll program. Testing also becomes more difﬁcult with\nthe object-oriented languages, such as Java and Cþþ. For example, your test\ncases for applications built with these languages must expose errors associ-\nated with object instantiation and memory management.\nIt might seem from working with this example that thoroughly testing a\ncomplex, real-world program would be impossible. Not so! Although the\ntask can be daunting, adequate program testing is a very necessary—and\nachievable—part of software development, as you will learn in this book.\n4 The Art of Software Testing",
+      "char_count": 1557,
+      "token_estimate": 389,
+      "page_number": 18,
+      "section_header": "14. For each test case did you specify the expected output from the",
+      "keywords": [
+        {
+          "keyword": "test",
+          "score": 0.938
+        },
+        {
+          "keyword": "test cases",
+          "score": 0.934
+        },
+        {
+          "keyword": "program",
+          "score": 0.926
+        },
+        {
+          "keyword": "testing",
+          "score": 0.92
+        },
+        {
+          "keyword": "Page",
+          "score": 0.908
+        }
+      ],
+      "start_char": 17768,
+      "end_char": 19341
+    },
+    {
+      "chunk_id": 13,
+      "text": "C02 08/25/2011 11:54:11 Page 5\n2\nThe Psychology\nand Economics of\nSoftware Testing\nS\noftware testing is a technical task, yes, but it also involves some impor-\ntant considerations of economics and human psychology .\nIn an ideal world, we would want to test every possible permutation of a\nprogram. In most cases, however, this simply is not possible. Even a seem-\ningly simple program can have hundreds or thousands of possible input\nand output combinations. Creating test cases for all of these possibilities is\nimpractical. Complete testing of a complex application would take too\nlong and require too many human resources to be economically feasible.\nIn addition, the software tester needs the proper attitude (perhaps\n‘‘vision’’ is a better word) to successfully test a software application. In\nsome cases, the tester’s attitude may be more important than the actual pro-\ncess itself. Therefore, we will start our discussion of software testing with\nthese issues before we delve into the more technical nature of the topic.\nThe Psychology of Testing\nOne of the primary causes of poor application testing is the fact that most\nprogrammers begin with a false deﬁnition of the term. They might say:\n‘‘Testing is the process of demonstrating that errors are not present.’’\n‘‘The purpose of testing is to show that a program performs its intended\nfunctions correctly .’’\n‘‘Testing is the process of establishing conﬁdence that a program does\nwhat it is supposed to do.’’\n5\n\nC02 08/25/2011 11:54:11 Page 6\nThese deﬁnitions are upside down.\nWhen you test a program, you want to add some value to it. Adding\nvalue through testing means raising the quality or reliability of the program.\nRaising the reliability of the program means ﬁnding and removing errors.\nTherefore, don’t test a program to show that it works; rather, start with\nthe assumption that the program contains errors (a valid assumption for\nalmost any program) and then test the program to ﬁnd as many of the\nerrors as possible.",
+      "char_count": 1988,
+      "token_estimate": 497,
+      "page_number": 19,
+      "section_header": "The Psychology",
+      "keywords": [
+        {
+          "keyword": "Testing",
+          "score": 0.971
+        },
+        {
+          "keyword": "program",
+          "score": 0.965
+        },
+        {
+          "keyword": "Economics",
+          "score": 0.957
+        },
+        {
+          "keyword": "Page",
+          "score": 0.954
+        },
+        {
+          "keyword": "tant considerations",
+          "score": 0.951
+        }
+      ],
+      "start_char": 19343,
+      "end_char": 21363
+    },
+    {
+      "chunk_id": 14,
+      "text": "Thus, a more appropriate deﬁnition is this:\nTesting is the process of executing a program with the intent of ﬁnd-\ning errors.\nAlthough this may sound like a game of subtle semantics, it’s really an\nimportant distinction. Understanding the true deﬁnition of software test-\ning can make a profound difference in the success of your efforts.\nHuman beings tend to be highly goal-oriented, and establishing the\nproper goal has an important psychological effect on them. If our goal is to\ndemonstrate that a program has no errors, then we will be steered sub-\nconsciously toward this goal; that is, we tend to select test data that have a\nlow probability of causing the program to fail. On the other hand, if our\ngoal is to demonstrate that a program has errors, our test data will have a\nhigher probability of ﬁnding errors. The latter approach will add more\nvalue to the program than the former.\nThis deﬁnition of testing has myriad implications, many of which are\nscattered throughout this book. For instance, it implies that testing is a\ndestructive, even sadistic, process, which explains why most people ﬁnd it\ndifﬁcult. That may go against our grain; with good fortune, most of us have\na constructive, rather than a destructive, outlook on life. Most people are\ninclined toward making objects rather than ripping them apart. The deﬁni-\ntion also has implications for how test cases (test data) should be designed,\nand who should and who should not test a given program.\nAnother way of reinforcing the proper deﬁnition of testing is to analyze\nthe use of the words ‘‘successful’’ and ‘‘unsuccessful’’—in particular, their use\nby project managers in categorizing the results of test cases. Most project\nmanagers refer to a test case that did not ﬁnd an error a ‘‘successful test run,’’\nwhereas a test that discovers a new error is usually called ‘‘unsuccessful.’’\nOnce again, this is upside down. ‘‘Unsuccessful’’ denotes something un-\ndesirable or disappointing. To our way of thinking, a well-constructed and\n6 The Art of Software Testing",
+      "char_count": 2039,
+      "token_estimate": 509,
+      "page_number": 20,
+      "section_header": "The Psychology",
+      "keywords": [
+        {
+          "keyword": "test",
+          "score": 0.956
+        },
+        {
+          "keyword": "program",
+          "score": 0.934
+        },
+        {
+          "keyword": "Testing",
+          "score": 0.931
+        },
+        {
+          "keyword": "test data",
+          "score": 0.913
+        },
+        {
+          "keyword": "goal",
+          "score": 0.893
+        }
+      ],
+      "start_char": 21364,
+      "end_char": 23403
+    }
+  ]
+}

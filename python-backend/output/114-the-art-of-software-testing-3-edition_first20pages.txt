@@ -1,0 +1,434 @@
+--- Page 1 ---
+
+
+--- Page 2 ---
+FFIRS 08/25/2011 11:31:15 Page 2
+
+--- Page 3 ---
+FFIRS 08/25/2011 11:31:15 Page 1
+THE ART OF
+SOFTWARE
+TESTING
+
+--- Page 4 ---
+FFIRS 08/25/2011 11:31:15 Page 2
+
+--- Page 5 ---
+FFIRS 08/25/2011 11:31:15 Page 3
+THE ART OF
+SOFTWARE
+TESTING
+Third Edition
+GLENFORD J. MYERS
+TOM BADGETT
+COREY SANDLER
+John Wiley & Sons, Inc.
+
+--- Page 6 ---
+FFIRS 08/25/2011 11:31:15 Page 4
+Copyright #2012 by Word Association, Inc. All rights reserved.
+Published by John Wiley & Sons, Inc., Hoboken, New Jersey.
+Published simultaneously in Canada.
+No part of this publication may be reproduced, stored in a retrieval system, or transmitted in
+any form or by any means, electronic, mechanical, photocopying, recording, scanning, or
+otherwise, except as permitted under Section 107 or 108 of the 1976 United States
+Copyright Act, without either the prior written permission of the Publisher, or authorization
+through payment of the appropriate per-copy fee to the Copyright Clearance Center, Inc.,
+222 Rosewood Drive, Danvers, MA 01923, (978) 750-8400, fax (978) 646-8600, or on the
+web at www.copyright.com. Requests to the Publisher for permission should be addressed
+to the Permissions Department, John Wiley & Sons, Inc., 111 River Street, Hoboken, NJ
+07030, (201) 748-6011, fax (201) 748-6008, or online at www.wiley.com/go/permissions.
+Limit of Liability/Disclaimer of Warranty: While the publisher and author have used their
+best efforts in preparing this book, they make no representations or warranties with respect
+to the accuracy or completeness of the contents of this book and speciﬁcally disclaim any
+implied warranties of merchantability or ﬁtness for a particular purpose. No warranty may
+be created or extended by sales representatives or written sales materials. The advice and
+strategies contained herein may not be suitable for your situation. You should consult with a
+professional where appropriate. Neither the publisher nor author shall be liable for any loss
+of proﬁt or any other commercial damages, including but not limited to special, incidental,
+consequential, or other damages.
+For general information on our other products and services or for technical support, please
+contact our Customer Care Department within the United States at (800) 762-2974, outside
+the United States at (317) 572-3993 or fax (317) 572-4002.
+Wiley also publishes its books in a variety of electronic formats. Some content that appears
+in print may not be available in electronic books. For more information about Wiley
+products, visit our website at www.wiley.com.
+Library of Congress Cataloging-in-Publication Data:
+Myers, Glenford J., 1946-
+The art of software testing / Glenford J. Myers, Corey Sandler, Tom Badgett. — 3rd ed.
+p. cm.
+Includes index.
+ISBN 978-1-118-03196-4 (cloth); ISBN 978-1-118-13313-2 (ebk); ISBN 978-1-118-13314-9
+(ebk); ISBN 978-1-118-13315-6 (ebk)
+1. Computer software—Testing. 2. Debugging in computer science. I. Sandler,
+Corey , 1950- II. Badgett, Tom. III. Title.
+QA76.76.T48M894 2011
+005.1
+04—dc23
+2011017548
+Printed in the United States of America
+1 0987654321
+
+--- Page 7 ---
+FTOC 08/25/2011 11:33:28 Page 5
+Contents
+Preface vii
+Introduction ix
+1 A Self-Assessment Test 1
+2 The Psychology and Economics of Software Testing 5
+3 Program Inspections, Walkthroughs, and Reviews 19
+4 Test-Case Design 41
+5 Module (Unit) Testing 85
+6 Higher-Order Testing 113
+7 Usability (User) Testing 143
+8 Debugging 157
+9 Testing in the Agile Environment 175
+10 Testing Internet Applications 193
+11 Mobile Application Testing 213
+Appendix Sample Extreme Testing Application 227
+Index 233
+v
+
+--- Page 8 ---
+FTOC 08/25/2011 11:33:28 Page 6
+
+--- Page 9 ---
+FPREF 08/08/2011 17:19:4 Page 7
+Preface
+I
+n 1979, Glenford Myers published a book that turned out to be a classic.
+The Art of Software Testinghas stood the test of time—25 years on the
+publisher’s list of available books. This fact alone is a testament to the
+solid, essential, and valuable nature of his work.
+During that same time, the authors of this edition (the third) of The Art
+of Software Testingpublished, collectively , more than 200 books, most of
+them on computer software topics. Some of these titles sold very well and,
+like this one, have gone through multiple versions. Corey Sandler’s Fix
+Your Own PC, for example, is in its eighth edition as this book goes to
+press; and Tom Badgett’s books on Microsoft PowerPoint and other Ofﬁce
+titles have gone through four or more editions. However, unlike Myers’s
+book, none of these remained current for more than a few years.
+What is the difference? The new er books covered more transient
+topics—operating systems, applicat ions software, security , communica-
+tions technology , and hardware conﬁgurations. Rapid changes in computer
+hardware and software technology during the 1980s and 1990s necessi-
+tated frequent changes and updates to these topics.
+Also during that period hundreds of books about software testing were
+published. They , too, took a more transient approach to the topic. The Art
+of Software Testing alone gave the industry a long-lasting, foundational
+guide to one of the most important computer topics: How do you ensure
+that all of the software you produce does what it was designed to do, and—
+just as important—doesn’t do what it isn’t supposed to do?
+The edition you are reading today retains the foundational philosophy
+laid by Myers more than three decades ago. But we have updated the
+examples to include more current programming languages, and we have
+addressed topics that were not yet topics when Myers wrote the ﬁrst
+edition: Web programming, e-commerce, Extreme (Agile) programming
+and testing, and testing applications for mobile devices.
+vii
+
+--- Page 10 ---
+FPREF 08/08/2011 17:19:4 Page 8
+Along the way , we never lost sight of the fact that a new classic must stay
+true to its roots, so our version also offers you a software testing philoso-
+phy , and a process that works across current and unforeseeable future
+hardware and software platforms. We hope that the third edition of The
+Art of Software Testing, too, will span a generation of software designers
+and developers.
+viii Preface
+
+--- Page 11 ---
+CINTRO 08/08/2011 17:23:34 Page 9
+Introduction
+A
+t the time this book was ﬁrst published, in 1979, it was a well-known
+rule of thumb that in a typical programming project approximately
+50 percent of the elapsed time and more than 50 percent of the total cost
+were expended in testing the program or system being developed.
+Today , a third of a century and two book updates later, the same holds
+true. There are new development systems, languages with built-in tools,
+and programmers who are used to developing more on the ﬂy . But testing
+continues to play an important part in any software development project.
+Given these facts, you might expect that by this time program testing
+would have been reﬁned into an exact science. This is far from the case. In
+fact, less seems to be known about software testing than about any other
+aspect of software development. Furthermore, testing has been an out-of-
+vogue subject; it was so when this book was ﬁrst published and, un-
+fortunately , this has not changed. Today thereare more books and articles
+about software testing—meaning that, at least, the topic has greater visibil-
+ity than it did when this book was ﬁrst published—but testing remains
+among the ‘‘dark arts’’ of software development.
+This would be more than enough reason to update this book on the art
+of software testing, but we have additional motivations. At various times,
+we have heard professors and teaching assistants say , ‘‘Our students gradu-
+ate and move into industry without any substantial knowledge of how to
+go about testing a program. Moreover, we rarely have any advice to offer
+in our introductory courses on how a student should go about testing and
+debugging his or her exercises.’’
+Thus, the purpose of this updated edition ofThe Art of Software Testing
+is the same as it was in 1979 and in 2004: to ﬁll these knowledge gaps for
+the professional programmer and the student of computer science. As the
+title implies, the book is a practical, rather than theoretical, discussion of
+the subject, complete with updated language and process discussions.
+ix
+
+--- Page 12 ---
+CINTRO 08/08/2011 17:23:35 Page 10
+Although it is possible to discuss program testing in a theoretical vein, this
+book is intended to be a practical, ‘‘both feet on the ground’’ handbook.
+Hence, many subjects related to program testing, such as the idea of math-
+ematically proving the correctnes s of a program, were purposefully
+excluded.
+Chapter 1 ‘‘assigns’’ a short self-assessment test that every reader should
+take before reading further. It turns out that the most important practical
+information you must understand about program testing is a set of philo-
+sophical and economic issues; these are discussed in Chapter 2. Chapter 3
+introduces the important concept of noncomputer-based code walk-
+throughs, or inspections. Rather than focus attention on the procedural or
+managerial aspects of this concept, as most such discussions do, this chap-
+ter addresses it from a technical, how-to-ﬁnd-errors point of view .
+The alert reader will realize that the most important component in a
+program tester’s bag of tricks is the knowledge of how to write effective
+test cases; this is the subject of Chapter 3. Chapter 4 discusses the testing
+of individual modules or subroutines, followed in Chapter 5 by the testing
+of larger entities. Chapter 6 takes on the concept of user or usability test-
+ing, a component of software testing that always has been important, but is
+even more relevant today due to the advent of more complex software
+targeted at an ever broadening audience. Chapter 7 offers some practical
+advice on program debugging, while Chapter 8 delves into the concepts of
+extreme programming testing with emphasis on what has come to be
+called the ‘‘agile environment.’’ Chapter 9 shows how to use other features
+of program testing, which are detailed elsewhere in this book, with Web
+programming, including e-commerce systems, and the all new , highly in-
+teractive social networking sites. Chapter 10 describes how to test software
+developed for the mobile environment.
+We direct this book at three major audiences. First, the professional
+programmer. Although we hope that not everything in this book will be
+new information to this audience, we believe it will add to the profes-
+sional’s knowledge of testing techniques. If the material allows this group
+to detect just one more bug in one program, the price of the book will have
+been recovered many times over.
+The second audience is the project manager, who will beneﬁt from the
+book’s practical information on the management of the testing process.
+The third audience is the programming and computer science student,
+and our goal for them is twofold: to expose them to the problems of
+x Introduction
+
+--- Page 13 ---
+CINTRO 08/08/2011 17:23:35 Page 11
+program testing, and provide a set of effective techniques. For this third
+group, we suggest the book be used as a supplement in programming
+courses such that students are exposed to the subject of software testing
+early in their education.
+Introduction xi
+
+--- Page 14 ---
+CINTRO 08/08/2011 17:23:35 Page 12
+
+--- Page 15 ---
+C01 08/11/2011 11:29:16 Page 1
+1
+A Self-Assessment
+Test
+S
+ince this book was ﬁrst published over 30 years ago, software testing
+has become more difﬁcult and easier than ever.
+Software testing is more difﬁcult because of the vast array of program-
+ming languages, operating systems, and hardware platforms that have
+evolved in the intervening decades. And while relatively few people used
+computers in the 1970s, today virtually no one can complete a day’s work
+without using a computer. Not only do computers exist on your desk, but
+a ‘‘computer,’’ and consequently software, is present in almost every device
+we use. Just try to think of the devices today that society relies on that are
+not software driven. Sure there are some—hammers and wheelbarrows
+come to mind—but the vast majority use some form of software to operate.
+Software is pervasive, which raises the value of testing it. The machines
+themselves are hundreds of times more powerful, and smaller, than those
+early devices, and today’s concept of ‘‘computer’’ is much broader and
+more difﬁcult to deﬁne. Televisions, telephones, gaming systems, and auto-
+mobiles all contain computers and computer software, and in some cases
+can even be considered computers themselves.
+Therefore, the software we write today potentially touches millions of
+people, either enabling them to do their jobs effectively and efﬁciently , or
+causing them untold frustration and costing them in the form of lost work
+or lost business. This is not to say that software is more important today
+than it was when the ﬁrst edition of this book was published, but it is safe
+to say that computers—and the software that drives them—certainly affect
+more people and more businesses now than ever before.
+1
+
+--- Page 16 ---
+C01 08/11/2011 11:29:16 Page 2
+Software testing is easier, too, in some ways, because the array of soft-
+ware and operating systems is much more sophisticated than in the past,
+providing intrinsic, well-tested routines that can be incorporated into
+applications without the need for a programmer to develop them from
+scratch. Graphical User Interfaces (GUIs), for example, can be built from a
+development language’s libraries, and since they are preprogrammed ob-
+jects that have been debugged and tested previously , the need for testing
+them as part of a custom application is much reduced.
+And, despite the plethora of software testing tomes available on the
+market today , many developers seem to have an attitude that is counter
+to extensive testing. Better development tools, pretested GUIs, and the
+pressure of tight deadlines in an ever more complex development envi-
+ronment can lead to avoidance of all but the most obvious testing
+protocols. Whereas low-level impacts of bugs may only inconvenience
+the end user, the worst impacts can result in large ﬁnancial loses, or even
+cause harm to people. The procedures in this book can help designers,
+developers, and project managers better understand the value of compre-
+hensive testing, and provide guidelines to help them achieve required
+testing goals.
+Software testing is a process, or a series of processes, designed to make
+sure computer code does what it was designed to do and, conversely , that it
+does not do anything unintended. Software should be predictable and con-
+sistent, presenting no surprises to users. In this book, we will look at many
+approaches to achieving this goal.
+Now , before we start the book, we’d like you to take a short exam. We
+want you to write a set of test cases—speciﬁc sets of data—to test properly
+a relatively simple program. Create a set of test data for the program—data
+the program must handle correctly to be considered a successful program.
+Here’s a description of the program:
+The program reads three integer values from an input dialog. The
+three values represent the lengths of the sides of a triangle. The pro-
+gram displays a message that states whether the triangle is scalene,
+isosceles, or equilateral.
+Remember that a scalene triangle is one where no two sides are equal,
+whereas an isosceles triangle has two equal sides, and an equilateral
+triangle has three sides of equal length. Moreover, the angles opposite the
+2 The Art of Software Testing
+
+--- Page 17 ---
+C01 08/11/2011 11:29:16 Page 3
+equal sides in an isosceles triangle also are equal (it also follows that the
+s i d e so p p o s i t ee q u a la n g l e si nat r i a n g l ea r ee q u a l ) ,a n da l la n g l e si na n
+equilateral triangle are equal.
+Evaluate your set of test cases by using it to answer the following
+questions. Give yourself one point for each yes answer.
+1. Do you have a test case that represents avalid scalene triangle?
+(Note that test cases such as 1, 2, 3 and 2, 5, 10 do not warrant a yes
+answer because a triangle having these dimensions is not valid.)
+2. Do you have a test case that represents a valid equilateral triangle?
+3. Do you have a test case that represents a valid isosceles triangle?
+(Note that a test case representing 2, 2, 4 would not count because it
+is not a valid triangle.)
+4. Do you have at least three test cases that represent valid isosceles
+triangles such that you have tried all three permutations of two equal
+sides (such as, 3, 3, 4; 3, 4, 3; and 4, 3, 3)?
+5. Do you have a test case in which one side has a zero value?
+6. Do you have a test case in which one side has a negative value?
+7. Do you have a test case with three integers greater than zero such that
+the sum of two of the numbers is equal to the third? (That is, if the
+program said that 1, 2, 3 represents a scalene triangle, it would contain
+ab u g . )
+8. Do you have at least three test cases in category 7 such that you have
+tried all three permutations where the length of one side is equal to
+the sum of the lengths of the other two sides (e.g., 1, 2, 3; 1, 3, 2; and
+3, 1, 2)?
+9. Do you have a test case with three integers greater than zero such that
+the sum of two of the numbers is less than the third (such as 1, 2, 4 or
+12, 15, 30)?
+10. Do you have at least three test cases in category 9 such that you have
+tried all three permutations (e.g., 1, 2, 4; 1, 4, 2; and 4, 1, 2)?
+11. Do you have a test case in which all sides are zero (0, 0, 0)?
+12. Do you have at least one test case specifying noninteger values
+(such as 2.5, 3.5, 5.5)?
+13. Do you have at least one test case specifying the wrong number of
+values (two rather than three integers, for example)?
+14. For each test case did you specify the expected output from the
+program in addition to the input values?
+A Self-Assessment Test 3
+
+--- Page 18 ---
+C01 08/11/2011 11:29:16 Page 4
+Of course, a set of test cases that satisﬁes these conditions does not guar-
+antee that you will ﬁnd all possible errors, but since questions 1 through
+13 represent errors that actually have occurred in different versions of this
+program, an adequate test of this program should expose at least these
+errors.
+Now , before you become concerned about your score, consider this: In
+our experience, highly qualiﬁed professional programmers score, on the
+average, only 7.8 out of a possible 14. If you’ve done better, congratula-
+tions; if not, we’re here to help.
+The point of the exercise is to illustrate that the testing of even a trivial
+program such as this is not an easy task. Given this is true, consider the difﬁ-
+culty of testing a 100,000-statement air trafﬁc control system, a compiler, or
+even a mundane payroll program. Testing also becomes more difﬁcult with
+the object-oriented languages, such as Java and Cþþ. For example, your test
+cases for applications built with these languages must expose errors associ-
+ated with object instantiation and memory management.
+It might seem from working with this example that thoroughly testing a
+complex, real-world program would be impossible. Not so! Although the
+task can be daunting, adequate program testing is a very necessary—and
+achievable—part of software development, as you will learn in this book.
+4 The Art of Software Testing
+
+--- Page 19 ---
+C02 08/25/2011 11:54:11 Page 5
+2
+The Psychology
+and Economics of
+Software Testing
+S
+oftware testing is a technical task, yes, but it also involves some impor-
+tant considerations of economics and human psychology .
+In an ideal world, we would want to test every possible permutation of a
+program. In most cases, however, this simply is not possible. Even a seem-
+ingly simple program can have hundreds or thousands of possible input
+and output combinations. Creating test cases for all of these possibilities is
+impractical. Complete testing of a complex application would take too
+long and require too many human resources to be economically feasible.
+In addition, the software tester needs the proper attitude (perhaps
+‘‘vision’’ is a better word) to successfully test a software application. In
+some cases, the tester’s attitude may be more important than the actual pro-
+cess itself. Therefore, we will start our discussion of software testing with
+these issues before we delve into the more technical nature of the topic.
+The Psychology of Testing
+One of the primary causes of poor application testing is the fact that most
+programmers begin with a false deﬁnition of the term. They might say:
+‘‘Testing is the process of demonstrating that errors are not present.’’
+‘‘The purpose of testing is to show that a program performs its intended
+functions correctly .’’
+‘‘Testing is the process of establishing conﬁdence that a program does
+what it is supposed to do.’’
+5
+
+--- Page 20 ---
+C02 08/25/2011 11:54:11 Page 6
+These deﬁnitions are upside down.
+When you test a program, you want to add some value to it. Adding
+value through testing means raising the quality or reliability of the program.
+Raising the reliability of the program means ﬁnding and removing errors.
+Therefore, don’t test a program to show that it works; rather, start with
+the assumption that the program contains errors (a valid assumption for
+almost any program) and then test the program to ﬁnd as many of the
+errors as possible.
+Thus, a more appropriate deﬁnition is this:
+Testing is the process of executing a program with the intent of ﬁnd-
+ing errors.
+Although this may sound like a game of subtle semantics, it’s really an
+important distinction. Understanding the true deﬁnition of software test-
+ing can make a profound difference in the success of your efforts.
+Human beings tend to be highly goal-oriented, and establishing the
+proper goal has an important psychological effect on them. If our goal is to
+demonstrate that a program has no errors, then we will be steered sub-
+consciously toward this goal; that is, we tend to select test data that have a
+low probability of causing the program to fail. On the other hand, if our
+goal is to demonstrate that a program has errors, our test data will have a
+higher probability of ﬁnding errors. The latter approach will add more
+value to the program than the former.
+This deﬁnition of testing has myriad implications, many of which are
+scattered throughout this book. For instance, it implies that testing is a
+destructive, even sadistic, process, which explains why most people ﬁnd it
+difﬁcult. That may go against our grain; with good fortune, most of us have
+a constructive, rather than a destructive, outlook on life. Most people are
+inclined toward making objects rather than ripping them apart. The deﬁni-
+tion also has implications for how test cases (test data) should be designed,
+and who should and who should not test a given program.
+Another way of reinforcing the proper deﬁnition of testing is to analyze
+the use of the words ‘‘successful’’ and ‘‘unsuccessful’’—in particular, their use
+by project managers in categorizing the results of test cases. Most project
+managers refer to a test case that did not ﬁnd an error a ‘‘successful test run,’’
+whereas a test that discovers a new error is usually called ‘‘unsuccessful.’’
+Once again, this is upside down. ‘‘Unsuccessful’’ denotes something un-
+desirable or disappointing. To our way of thinking, a well-constructed and
+6 The Art of Software Testing
