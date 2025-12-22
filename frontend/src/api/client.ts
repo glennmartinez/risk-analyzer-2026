@@ -3,7 +3,12 @@ import type { ChatRequest, ChatResponse, HealthResponse } from "./types";
 const API_BASE_URL = "http://localhost:8080";
 
 // Re-export types for convenience
-export type { ChatMessage, ChatRequest, ChatResponse, HealthResponse } from "./types";
+export type {
+  ChatMessage,
+  ChatRequest,
+  ChatResponse,
+  HealthResponse,
+} from "./types";
 
 class ApiClient {
   private baseUrl: string;

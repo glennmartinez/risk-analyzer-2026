@@ -10,12 +10,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routes import documents_router, search_router, health_router
+from .routes import documents_router, health_router, rag_router, search_router
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -26,17 +25,17 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     logger.info(f"Starting {settings.app_name} v{settings.app_version}")
     logger.info(f"Upload directory: {settings.upload_dir}")
-    logger.info(f"ChromaDB directory: {settings.chroma_persist_dir}")
-    
+    logger.info(f"ChromaDB server: {settings.chroma_host}:{settings.chroma_port}")
+
     yield
-    
+
     logger.info("Shutting down...")
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application"""
     settings = get_settings()
-    
+
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
@@ -59,7 +58,7 @@ This service provides:
         docs_url="/docs",
         redoc_url="/redoc",
     )
-    
+
     # Configure CORS
     app.add_middleware(
         CORSMiddleware,
@@ -68,12 +67,13 @@ This service provides:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # Include routers
     app.include_router(health_router)
     app.include_router(documents_router)
     app.include_router(search_router)
-    
+    app.include_router(rag_router)
+
     return app
 
 

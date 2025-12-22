@@ -1,0 +1,946 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "A comprehensive API for document processing, analysis, and risk assessment",
+        "title": "Risk Analyzer API",
+        "termsOfService": "http://swagger.io/terms/",
+        "contact": {
+            "name": "API Support",
+            "url": "http://www.swagger.io/support",
+            "email": "support@swagger.io"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Returns a welcome message for the API server",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "general"
+                ],
+                "summary": "Home page",
+                "responses": {
+                    "200": {
+                        "description": "Welcome to the Grok Server!",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat": {
+            "post": {
+                "description": "Send a message to the LLM and get a response",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Chat with LLM",
+                "parameters": [
+                    {
+                        "description": "Chat request with message and optional history",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/chat/rag": {
+            "post": {
+                "description": "Send a message to the LLM with automatic document retrieval for context",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Chat with RAG (Retrieval-Augmented Generation)",
+                "parameters": [
+                    {
+                        "description": "RAG chat request with message and optional RAG settings",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RAGChatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RAGChatResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.RAGChatResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/models.RAGChatResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/chunks": {
+            "get": {
+                "description": "Get chunks from the vector store with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Get document chunks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "documents",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by document ID",
+                        "name": "document_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Maximum number of chunks",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of chunks to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/collection-stats": {
+            "get": {
+                "description": "Get statistics about the vector store collection",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Get collection statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "documents",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/list": {
+            "get": {
+                "description": "Get a list of all documents stored in the vector database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "List all documents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "documents",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/process-example": {
+            "post": {
+                "description": "Process the bundled example PDF through the full pipeline",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Process example PDF",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "sentence",
+                        "description": "Chunking strategy",
+                        "name": "chunking_strategy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 512,
+                        "description": "Chunk size",
+                        "name": "chunk_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Chunk overlap",
+                        "name": "chunk_overlap",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Store in vector DB",
+                        "name": "store_in_vector_db",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "documents",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/documents/upload": {
+            "post": {
+                "description": "Upload a PDF or document file and process it",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Upload and process document",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Document file to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "sentence",
+                        "description": "Chunking strategy",
+                        "name": "chunking_strategy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 512,
+                        "description": "Chunk size",
+                        "name": "chunk_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Chunk overlap",
+                        "name": "chunk_overlap",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Store in vector DB",
+                        "name": "store_in_vector_db",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "documents",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Check if the server is healthy",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.BasicResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/issues": {
+            "get": {
+                "description": "Returns a list of all issues from the configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "issues"
+                ],
+                "summary": "Get all issues",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Issue"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/issues/keywords-only": {
+            "get": {
+                "description": "Returns only keywords for all issues",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "issues"
+                ],
+                "summary": "Get keywords only",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 5,
+                        "description": "Maximum keywords per issue",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/issues/with-keywords": {
+            "get": {
+                "description": "Returns issues enhanced with extracted keywords",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "issues"
+                ],
+                "summary": "Get issues with keywords",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Maximum keywords per issue",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.IssueWithKeywords"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/llm/health": {
+            "get": {
+                "description": "Check if the LLM service (LM Studio) is available",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "chat"
+                ],
+                "summary": "Check LLM health",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.ChatResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/search": {
+            "get": {
+                "description": "Search for similar chunks in the vector store",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "Search documents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "documents",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 5,
+                        "description": "Number of results",
+                        "name": "top_k",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/search/collections": {
+            "get": {
+                "description": "Get all vector store collections",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "List search collections",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/search/collections/{collection_name}": {
+            "delete": {
+                "description": "Delete and recreate a search collection",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "Reset collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/search/collections/{collection_name}/stats": {
+            "get": {
+                "description": "Get statistics for a specific search collection",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "Get collection statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/search/query": {
+            "get": {
+                "description": "Perform a quick search across document chunks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "Quick search documents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "q",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 5,
+                        "description": "Number of results",
+                        "name": "top_k",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "collection",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by document ID",
+                        "name": "document_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.IssueWithKeywords": {
+            "type": "object",
+            "properties": {
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Component"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "issue_type": {
+                    "type": "string"
+                },
+                "keywords": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.KeywordResult"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.BasicResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChatMessage": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "The message content",
+                    "type": "string"
+                },
+                "role": {
+                    "description": "\"user\", \"assistant\", or \"system\"",
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChatRequest": {
+            "type": "object",
+            "properties": {
+                "history": {
+                    "description": "Previous conversation history",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ChatMessage"
+                    }
+                },
+                "message": {
+                    "description": "The current user message",
+                    "type": "string"
+                }
+            }
+        },
+        "models.ChatResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "The assistant's response",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "\"success\" or \"error\"",
+                    "type": "string"
+                }
+            }
+        },
+        "models.Component": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+            ],
+            "x-enum-varnames": [
+                "Console",
+                "BigRedButton",
+                "LOC",
+                "HotFixing",
+                "Jenkins",
+                "Builds",
+                "ACLOS",
+                "China"
+            ]
+        },
+        "models.Issue": {
+            "type": "object",
+            "properties": {
+                "components": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Component"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "issue_type": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RAGChatRequest": {
+            "type": "object",
+            "properties": {
+                "collection_name": {
+                    "description": "Vector DB collection to search (default: \"documents\")",
+                    "type": "string"
+                },
+                "history": {
+                    "description": "Previous conversation history",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.ChatMessage"
+                    }
+                },
+                "max_chunks": {
+                    "description": "Maximum chunks to retrieve (default: 3)",
+                    "type": "integer"
+                },
+                "message": {
+                    "description": "The current user message",
+                    "type": "string"
+                },
+                "use_rag": {
+                    "description": "Whether to use RAG (default: true)",
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.RAGChatResponse": {
+            "type": "object",
+            "properties": {
+                "context": {
+                    "description": "Retrieved document chunks used for context",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.RAGContextChunk"
+                    }
+                },
+                "message": {
+                    "description": "The assistant's response",
+                    "type": "string"
+                },
+                "query": {
+                    "description": "The search query used",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "\"success\" or \"error\"",
+                    "type": "string"
+                }
+            }
+        },
+        "models.RAGContextChunk": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "description": "Chunk metadata (document_id, page, etc.)",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "score": {
+                    "description": "Similarity score",
+                    "type": "number"
+                },
+                "text": {
+                    "description": "The chunk text content",
+                    "type": "string"
+                }
+            }
+        },
+        "services.KeywordResult": {
+            "type": "object",
+            "properties": {
+                "frequency": {
+                    "type": "integer"
+                },
+                "pos_tag": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "word": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "externalDocs": {
+        "description": "OpenAPI",
+        "url": "https://swagger.io/resources/open-api/"
+    }
+}

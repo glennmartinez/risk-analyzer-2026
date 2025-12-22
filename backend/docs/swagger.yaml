@@ -1,0 +1,642 @@
+basePath: /
+definitions:
+  handlers.IssueWithKeywords:
+    properties:
+      components:
+        items:
+          $ref: '#/definitions/models.Component'
+        type: array
+      description:
+        type: string
+      id:
+        type: string
+      issue_type:
+        type: string
+      keywords:
+        items:
+          $ref: '#/definitions/services.KeywordResult'
+        type: array
+      title:
+        type: string
+    type: object
+  models.BasicResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  models.ChatMessage:
+    properties:
+      content:
+        description: The message content
+        type: string
+      role:
+        description: '"user", "assistant", or "system"'
+        type: string
+    type: object
+  models.ChatRequest:
+    properties:
+      history:
+        description: Previous conversation history
+        items:
+          $ref: '#/definitions/models.ChatMessage'
+        type: array
+      message:
+        description: The current user message
+        type: string
+    type: object
+  models.ChatResponse:
+    properties:
+      message:
+        description: The assistant's response
+        type: string
+      status:
+        description: '"success" or "error"'
+        type: string
+    type: object
+  models.Component:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    type: integer
+    x-enum-varnames:
+    - Console
+    - BigRedButton
+    - LOC
+    - HotFixing
+    - Jenkins
+    - Builds
+    - ACLOS
+    - China
+  models.Issue:
+    properties:
+      components:
+        items:
+          $ref: '#/definitions/models.Component'
+        type: array
+      description:
+        type: string
+      id:
+        type: string
+      issue_type:
+        type: string
+      title:
+        type: string
+    type: object
+  models.RAGChatRequest:
+    properties:
+      collection_name:
+        description: 'Vector DB collection to search (default: "documents")'
+        type: string
+      history:
+        description: Previous conversation history
+        items:
+          $ref: '#/definitions/models.ChatMessage'
+        type: array
+      max_chunks:
+        description: 'Maximum chunks to retrieve (default: 3)'
+        type: integer
+      message:
+        description: The current user message
+        type: string
+      use_rag:
+        description: 'Whether to use RAG (default: true)'
+        type: boolean
+    type: object
+  models.RAGChatResponse:
+    properties:
+      context:
+        description: Retrieved document chunks used for context
+        items:
+          $ref: '#/definitions/models.RAGContextChunk'
+        type: array
+      message:
+        description: The assistant's response
+        type: string
+      query:
+        description: The search query used
+        type: string
+      status:
+        description: '"success" or "error"'
+        type: string
+    type: object
+  models.RAGContextChunk:
+    properties:
+      metadata:
+        additionalProperties: true
+        description: Chunk metadata (document_id, page, etc.)
+        type: object
+      score:
+        description: Similarity score
+        type: number
+      text:
+        description: The chunk text content
+        type: string
+    type: object
+  services.KeywordResult:
+    properties:
+      frequency:
+        type: integer
+      pos_tag:
+        type: string
+      score:
+        type: number
+      word:
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: A comprehensive API for document processing, analysis, and risk assessment
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Risk Analyzer API
+  version: "1.0"
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: Returns a welcome message for the API server
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Welcome to the Grok Server!
+          schema:
+            type: string
+      summary: Home page
+      tags:
+      - general
+  /chat:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to the LLM and get a response
+      parameters:
+      - description: Chat request with message and optional history
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ChatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ChatResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ChatResponse'
+      summary: Chat with LLM
+      tags:
+      - chat
+  /chat/rag:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to the LLM with automatic document retrieval for
+        context
+      parameters:
+      - description: RAG chat request with message and optional RAG settings
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RAGChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RAGChatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.RAGChatResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.RAGChatResponse'
+      summary: Chat with RAG (Retrieval-Augmented Generation)
+      tags:
+      - chat
+  /documents/chunks:
+    get:
+      consumes:
+      - application/json
+      description: Get chunks from the vector store with pagination
+      parameters:
+      - default: documents
+        description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      - description: Filter by document ID
+        in: query
+        name: document_id
+        type: string
+      - default: 100
+        description: Maximum number of chunks
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of chunks to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get document chunks
+      tags:
+      - documents
+  /documents/collection-stats:
+    get:
+      consumes:
+      - application/json
+      description: Get statistics about the vector store collection
+      parameters:
+      - default: documents
+        description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get collection statistics
+      tags:
+      - documents
+  /documents/list:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all documents stored in the vector database
+      parameters:
+      - default: documents
+        description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List all documents
+      tags:
+      - documents
+  /documents/process-example:
+    post:
+      consumes:
+      - application/json
+      description: Process the bundled example PDF through the full pipeline
+      parameters:
+      - default: sentence
+        description: Chunking strategy
+        in: query
+        name: chunking_strategy
+        type: string
+      - default: 512
+        description: Chunk size
+        in: query
+        name: chunk_size
+        type: integer
+      - default: 50
+        description: Chunk overlap
+        in: query
+        name: chunk_overlap
+        type: integer
+      - default: true
+        description: Store in vector DB
+        in: query
+        name: store_in_vector_db
+        type: boolean
+      - default: documents
+        description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Process example PDF
+      tags:
+      - documents
+  /documents/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a PDF or document file and process it
+      parameters:
+      - description: Document file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - default: sentence
+        description: Chunking strategy
+        in: query
+        name: chunking_strategy
+        type: string
+      - default: 512
+        description: Chunk size
+        in: query
+        name: chunk_size
+        type: integer
+      - default: 50
+        description: Chunk overlap
+        in: query
+        name: chunk_overlap
+        type: integer
+      - default: false
+        description: Store in vector DB
+        in: query
+        name: store_in_vector_db
+        type: boolean
+      - default: documents
+        description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload and process document
+      tags:
+      - documents
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Check if the server is healthy
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.BasicResponse'
+      summary: Health check endpoint
+      tags:
+      - health
+  /issues:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all issues from the configuration
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Issue'
+            type: array
+      summary: Get all issues
+      tags:
+      - issues
+  /issues/keywords-only:
+    get:
+      consumes:
+      - application/json
+      description: Returns only keywords for all issues
+      parameters:
+      - default: 5
+        description: Maximum keywords per issue
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+      summary: Get keywords only
+      tags:
+      - issues
+  /issues/with-keywords:
+    get:
+      consumes:
+      - application/json
+      description: Returns issues enhanced with extracted keywords
+      parameters:
+      - default: 10
+        description: Maximum keywords per issue
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/handlers.IssueWithKeywords'
+            type: array
+      summary: Get issues with keywords
+      tags:
+      - issues
+  /llm/health:
+    get:
+      consumes:
+      - application/json
+      description: Check if the LLM service (LM Studio) is available
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ChatResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/models.ChatResponse'
+      summary: Check LLM health
+      tags:
+      - chat
+  /search:
+    get:
+      consumes:
+      - application/json
+      description: Search for similar chunks in the vector store
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: documents
+        description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      - default: 5
+        description: Number of results
+        in: query
+        name: top_k
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search documents
+      tags:
+      - search
+  /search/collections:
+    get:
+      consumes:
+      - application/json
+      description: Get all vector store collections
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List search collections
+      tags:
+      - search
+  /search/collections/{collection_name}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete and recreate a search collection
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Reset collection
+      tags:
+      - search
+  /search/collections/{collection_name}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get statistics for a specific search collection
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get collection statistics
+      tags:
+      - search
+  /search/query:
+    get:
+      consumes:
+      - application/json
+      description: Perform a quick search across document chunks
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 5
+        description: Number of results
+        in: query
+        name: top_k
+        type: integer
+      - description: Collection name
+        in: query
+        name: collection
+        type: string
+      - description: Filter by document ID
+        in: query
+        name: document_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Quick search documents
+      tags:
+      - search
+swagger: "2.0"

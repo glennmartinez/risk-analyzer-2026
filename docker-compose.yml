@@ -31,13 +31,60 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD:-risk_pass}
       DB_DATABASE: risk_analyzer
       PORT: 8080
+      PYTHON_BACKEND_URL: http://python-backend:8000
     ports:
       - "8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
+      python-backend:
+        condition: service_started
     volumes:
       - ./config:/root/config
 
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: risk_analyzer_chromadb
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  python-backend:
+    build: ./python-backend
+    container_name: risk_analyzer_python
+    environment:
+      PORT: 8000
+      UPLOAD_DIR: /app/uploads
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: 8000
+      GO_BACKEND_URL: http://app:8080
+      CORS_ORIGINS: '["http://localhost:8080", "http://localhost:5173", "http://app:8080"]'
+    ports:
+      - "8000:8000"
+    volumes:
+      - python_uploads:/app/uploads
+    depends_on:
+      chromadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
 volumes:
   mysql_data:
+  python_uploads:
+  chroma_data:

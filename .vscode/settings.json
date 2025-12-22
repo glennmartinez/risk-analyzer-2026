@@ -1,0 +1,16 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/python-backend/venv/bin/python",
+  "python.analysis.extraPaths": ["${workspaceFolder}/python-backend"],
+  "python.analysis.typeCheckingMode": "basic",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+  },
+  "basedpyright.analysis.typeCheckingMode": "basic",
+  "basedpyright.analysis.venvPath": "${workspaceFolder}/python-backend",
+  "basedpyright.analysis.venv": "venv",
+  "basedpyright.analysis.extraPaths": ["${workspaceFolder}/python-backend"],
+  "basedpyright.analysis.reportMissingImports": "none",
+  "basedpyright.analysis.reportMissingTypeStubs": "none",
+  "basedpyright.analysis.reportMissingModuleSource": "none",
+}

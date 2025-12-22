@@ -2,24 +2,32 @@
 Document processing routes
 """
 
-import time
 import logging
-from typing import Optional
+import time
 from pathlib import Path
+from typing import Optional
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+)
 from fastapi.responses import JSONResponse
 
+from ..config import Settings, get_settings
 from ..models import (
-    ProcessingRequest,
-    ProcessingResponse,
     ChunkedDocument,
-    ParsedDocument,
     ChunkingStrategy,
     ErrorResponse,
+    ParsedDocument,
+    ProcessingRequest,
+    ProcessingResponse,
 )
-from ..services import DocumentParser, DocumentChunker, VectorStoreService
-from ..config import get_settings, Settings
+from ..services import DocumentChunker, DocumentParser, VectorStoreService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -43,7 +51,7 @@ def get_vector_store():
     response_model=ProcessingResponse,
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
     summary="Upload and process a document",
-    description="Upload a PDF or document file, parse it with Docling, chunk it with LlamaIndex, and optionally store in vector DB"
+    description="Upload a PDF or document file, parse it with Docling, chunk it with LlamaIndex, and optionally store in vector DB",
 )
 async def upload_document(
     file: UploadFile = File(...),
@@ -64,53 +72,53 @@ async def upload_document(
     3. Optionally store in ChromaDB vector store
     """
     start_time = time.time()
-    
+
     # Validate file
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
-    
+
     file_ext = Path(file.filename).suffix.lower().lstrip(".")
     supported = parser.get_supported_formats()
-    
+
     if file_ext not in supported:
         raise HTTPException(
-            status_code=400, 
-            detail=f"Unsupported file type: {file_ext}. Supported: {supported}"
+            status_code=400,
+            detail=f"Unsupported file type: {file_ext}. Supported: {supported}",
         )
-    
+
     # Check file size
     file_bytes = await file.read()
     max_size = settings.max_file_size_mb * 1024 * 1024
-    
+
     if len(file_bytes) > max_size:
         raise HTTPException(
             status_code=400,
-            detail=f"File too large. Maximum size: {settings.max_file_size_mb}MB"
+            detail=f"File too large. Maximum size: {settings.max_file_size_mb}MB",
         )
-    
+
     try:
         # Step 1: Parse document with Docling
         logger.info(f"Parsing document: {file.filename}")
         parsed_doc = parser.parse_bytes(file_bytes, file.filename, settings.upload_dir)
-        
+
         # Step 2: Chunk with LlamaIndex
         logger.info(f"Chunking document with strategy: {chunking_strategy}")
         chunked_doc = chunker.chunk_document(
             parsed_doc,
             strategy=chunking_strategy,
             chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
+            chunk_overlap=chunk_overlap,
         )
-        
+
         # Step 3: Optionally store in vector DB
         vector_db_stored = False
         if store_in_vector_db:
             logger.info("Storing chunks in vector DB")
             vector_store.store_chunks(chunked_doc, collection_name)
             vector_db_stored = True
-        
+
         processing_time = time.time() - start_time
-        
+
         return ProcessingResponse(
             success=True,
             document_id=chunked_doc.document_id,
@@ -118,9 +126,9 @@ async def upload_document(
             metadata=chunked_doc.metadata,
             chunk_count=chunked_doc.total_chunks,
             vector_db_stored=vector_db_stored,
-            processing_time_seconds=round(processing_time, 3)
+            processing_time_seconds=round(processing_time, 3),
         )
-        
+
     except Exception as e:
         logger.exception(f"Error processing document: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -130,7 +138,7 @@ async def upload_document(
     "/parse",
     response_model=ParsedDocument,
     summary="Parse a document without chunking",
-    description="Parse a document with Docling and return extracted content"
+    description="Parse a document with Docling and return extracted content",
 )
 async def parse_document(
     file: UploadFile = File(...),
@@ -138,12 +146,12 @@ async def parse_document(
     parser: DocumentParser = Depends(get_parser),
 ):
     """Parse a document and return the extracted content without chunking"""
-    
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
-    
+
     file_bytes = await file.read()
-    
+
     try:
         parsed_doc = parser.parse_bytes(file_bytes, file.filename, settings.upload_dir)
         return parsed_doc
@@ -156,7 +164,7 @@ async def parse_document(
     "/chunk",
     response_model=ChunkedDocument,
     summary="Parse and chunk a document",
-    description="Parse a document and return chunks without storing in vector DB"
+    description="Parse a document and return chunks without storing in vector DB",
 )
 async def chunk_document(
     file: UploadFile = File(...),
@@ -168,19 +176,19 @@ async def chunk_document(
     chunker: DocumentChunker = Depends(get_chunker),
 ):
     """Parse and chunk a document, returning all chunks"""
-    
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
-    
+
     file_bytes = await file.read()
-    
+
     try:
         parsed_doc = parser.parse_bytes(file_bytes, file.filename, settings.upload_dir)
         chunked_doc = chunker.chunk_document(
             parsed_doc,
             strategy=chunking_strategy,
             chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
+            chunk_overlap=chunk_overlap,
         )
         return chunked_doc
     except Exception as e:
@@ -191,7 +199,7 @@ async def chunk_document(
 @router.delete(
     "/{document_id}",
     summary="Delete a document from vector store",
-    description="Remove all chunks for a document from the vector database"
+    description="Remove all chunks for a document from the vector database",
 )
 async def delete_document(
     document_id: str,
@@ -199,35 +207,176 @@ async def delete_document(
     vector_store: VectorStoreService = Depends(get_vector_store),
 ):
     """Delete a document's chunks from the vector store"""
-    
+
     deleted_count = vector_store.delete_document(document_id, collection_name)
-    
+
     return {
         "success": True,
         "document_id": document_id,
-        "deleted_chunks": deleted_count
+        "deleted_chunks": deleted_count,
     }
 
 
 @router.get(
     "/strategies",
     summary="Get available chunking strategies",
-    description="List all available chunking strategies"
+    description="List all available chunking strategies",
 )
 async def get_chunking_strategies(chunker: DocumentChunker = Depends(get_chunker)):
     """Get list of available chunking strategies"""
-    return {
-        "strategies": chunker.get_available_strategies()
-    }
+    return {"strategies": chunker.get_available_strategies()}
 
 
 @router.get(
     "/formats",
     summary="Get supported file formats",
-    description="List all supported file formats for parsing"
+    description="List all supported file formats for parsing",
 )
 async def get_supported_formats(parser: DocumentParser = Depends(get_parser)):
     """Get list of supported file formats"""
-    return {
-        "formats": parser.get_supported_formats()
-    }
+    return {"formats": parser.get_supported_formats()}
+
+
+@router.post(
+    "/process-example",
+    response_model=ProcessingResponse,
+    responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+    summary="Process the example PDF",
+    description="Process the bundled example PDF (The Art of Software Testing) - useful for testing the full pipeline",
+)
+async def process_example_pdf(
+    chunking_strategy: ChunkingStrategy = Query(default=ChunkingStrategy.SENTENCE),
+    chunk_size: int = Query(default=512, ge=100, le=4096),
+    chunk_overlap: int = Query(default=50, ge=0, le=500),
+    store_in_vector_db: bool = Query(default=True),
+    collection_name: Optional[str] = Query(default=None),
+    settings: Settings = Depends(get_settings),
+    parser: DocumentParser = Depends(get_parser),
+    chunker: DocumentChunker = Depends(get_chunker),
+    vector_store: VectorStoreService = Depends(get_vector_store),
+):
+    """
+    Process the bundled example PDF through the full pipeline:
+    1. Parse with Docling (extract text, tables, figures)
+    2. Chunk with LlamaIndex
+    3. Store in ChromaDB vector store (enabled by default)
+
+    This is useful for testing and demonstration purposes.
+    """
+    start_time = time.time()
+
+    # Path to the example PDF
+    example_pdf_path = (
+        Path(__file__).parent.parent
+        / "example_data"
+        / "114-the-art-of-software-testing-3-edition.pdf"
+    )
+
+    if not example_pdf_path.exists():
+        raise HTTPException(
+            status_code=404, detail=f"Example PDF not found at: {example_pdf_path}"
+        )
+
+    try:
+        # Step 1: Parse document with Docling
+        logger.info(f"Parsing example PDF: {example_pdf_path.name}")
+        parsed_doc = parser.parse_file(str(example_pdf_path))
+
+        # Step 2: Chunk with LlamaIndex
+        logger.info(f"Chunking document with strategy: {chunking_strategy}")
+        chunked_doc = chunker.chunk_document(
+            parsed_doc,
+            strategy=chunking_strategy,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+
+        # Step 3: Store in vector DB
+        vector_db_stored = False
+        if store_in_vector_db:
+            logger.info("Storing chunks in vector DB")
+            vector_store.store_chunks(chunked_doc, collection_name)
+            vector_db_stored = True
+
+        processing_time = time.time() - start_time
+
+        return ProcessingResponse(
+            success=True,
+            document_id=chunked_doc.document_id,
+            message=f"Successfully processed example PDF: {example_pdf_path.name}",
+            metadata=chunked_doc.metadata,
+            chunk_count=chunked_doc.total_chunks,
+            vector_db_stored=vector_db_stored,
+            processing_time_seconds=round(processing_time, 3),
+        )
+
+    except Exception as e:
+        logger.exception(f"Error processing example PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/collection-stats",
+    summary="Get vector store collection statistics",
+    description="Get stats about the current vector store collection",
+)
+async def get_collection_stats(
+    collection_name: Optional[str] = Query(default=None),
+    vector_store: VectorStoreService = Depends(get_vector_store),
+):
+    """Get statistics about the vector store collection"""
+    try:
+        stats = vector_store.get_collection_stats(collection_name)
+        return stats
+    except Exception as e:
+        logger.exception(f"Error getting collection stats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/list",
+    summary="List all documents in the vector store",
+    description="Get a list of all unique documents with their metadata and chunk counts",
+)
+async def list_documents(
+    collection_name: Optional[str] = Query(default=None),
+    vector_store: VectorStoreService = Depends(get_vector_store),
+):
+    """List all documents stored in the vector database"""
+    try:
+        documents = vector_store.list_documents(collection_name)
+        return {
+            "documents": documents,
+            "total": len(documents),
+        }
+    except Exception as e:
+        logger.exception(f"Error listing documents: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/chunks",
+    summary="Get all chunks from the vector store",
+    description="Get chunks with pagination, optionally filtered by document_id",
+)
+async def get_chunks(
+    collection_name: Optional[str] = Query(default=None),
+    document_id: Optional[str] = Query(
+        default=None, description="Filter by document ID"
+    ),
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+    vector_store: VectorStoreService = Depends(get_vector_store),
+):
+    """Get chunks from the vector store with pagination"""
+    try:
+        result = vector_store.get_all_chunks(
+            collection_name=collection_name,
+            limit=limit,
+            offset=offset,
+            document_id=document_id,
+        )
+        return result
+    except Exception as e:
+        logger.exception(f"Error getting chunks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

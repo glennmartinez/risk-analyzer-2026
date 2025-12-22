@@ -19,7 +19,7 @@ export function ChatView() {
       inputRef.current.style.height = "auto";
       inputRef.current.style.height = `${Math.min(
         inputRef.current.scrollHeight,
-        200
+        200,
       )}px`;
     }
   }, [input]);
@@ -41,7 +41,7 @@ export function ChatView() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
+    <div className="flex flex-col h-screen bg-gray-900 text-gray-10 ">
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
         <h1 className="text-xl font-semibold">Chat</h1>

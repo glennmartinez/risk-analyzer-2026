@@ -15,6 +15,14 @@ type IssueWithKeywords struct {
 	Keywords []services.KeywordResult `json:"keywords"`
 }
 
+// IssuesHandler godoc
+// @Summary Get all issues
+// @Description Returns a list of all issues from the configuration
+// @Tags issues
+// @Accept json
+// @Produce json
+// @Success 200 {array} models.Issue
+// @Router /issues [get]
 func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 	issues, err := config.LoadFromFile("config/example_issues.json")
 	if err != nil {
@@ -30,6 +38,15 @@ func IssuesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // IssuesWithKeywordsHandler returns issues with extracted keywords
+// IssuesWithKeywordsHandler godoc
+// @Summary Get issues with keywords
+// @Description Returns issues enhanced with extracted keywords
+// @Tags issues
+// @Accept json
+// @Produce json
+// @Param limit query int false "Maximum keywords per issue" default(10)
+// @Success 200 {array} IssueWithKeywords
+// @Router /issues/with-keywords [get]
 func IssuesWithKeywordsHandler(w http.ResponseWriter, r *http.Request) {
 	issues, err := config.LoadFromFile("config/example_issues.json")
 	if err != nil {
@@ -70,6 +87,15 @@ func IssuesWithKeywordsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // KeywordsOnlyHandler returns only keywords for all issues
+// KeywordsOnlyHandler godoc
+// @Summary Get keywords only
+// @Description Returns only keywords for all issues
+// @Tags issues
+// @Accept json
+// @Produce json
+// @Param limit query int false "Maximum keywords per issue" default(5)
+// @Success 200 {object} map[string][]string
+// @Router /issues/keywords-only [get]
 func KeywordsOnlyHandler(w http.ResponseWriter, r *http.Request) {
 	issues, err := config.LoadFromFile("config/example_issues.json")
 	if err != nil {

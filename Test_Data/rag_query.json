@@ -1,0 +1,67 @@
+{
+	"query": "agile",
+	"results": [
+		{
+			"chunk_id": "7cad7319-3c69-4b27-8b79-2fc22add88b7",
+			"text": "In the next chapter we take on the subject of extreme testing, techniques well suited to help uncover errors in extreme programming environments such as agile development.\n\n<!-- image -->\n\n## Testing in the Agile Environment\n\nI ncreased competition and interconnectedness in all markets have forced businesses to shorten their time-to-market while continuing to provide high-quality products to their customers. This is particularly true in the software development industry where the Internet makes possible near-instant delivery of software applications and services. Whether creating a product for the masses or for the human resources department, one fact remains immutable: The twenty-first century customer demands a quality application delivered almost immediately. Unfortunately , traditional software development processes cannot keep up in this competitive environment.\n\nIn the early 2000s, a group of developers met to discuss the state of lightweight and rapid development methodologies. At the gathering they compared notes to identify what successful software projects look like; what made some projects succeed while others limped along. In the end, they created the ''Manifesto for Agile Software Development,'' a document that became the cornerstone of the Agile movement. Less a discrete methodology, the Agile Manifesto (Figure 9.1) is a unique philosophy that focuses on customers and employees, in lieu of rigid approaches and hierarchies.\n\n## Features of Agile Development\n\nAgile development promotes iterative and incremental development, with significant testing, that is customer-centric and welcomes change during the process. All attributes of traditional software development approaches\n\nWe are uncovering better ways of developing software by doing it and helping others do it. Through this work we have come to value:\n\nIndividuals and interactions over processes and tools Working software over comprehensive documentation Customer collaboration over contract negotiation Responding to change over following a plan\n\nThat is, while there is value in the items on the right, we value the items on the left more.\n\nKent Beck\n\nMike Beedle\n\nArie van Bennekum\n\nAlistair Cockburn\n\nWard Cunningham\n\nMartin Fowler\n\nJames Grenning\n\nJim Highsmith\n\nAndrew Hunt\n\nRon Jeffries\n\nJon Kern\n\nBrian Marick\n\nRobert C. Martin\n\nSteve Mellor\n\nKen Schwaber\n\nJeff Sutherland\n\nDave Thomas",
+			"score": 0.63852012,
+			"metadata": {
+				"token_count": 597,
+				"chunk_index": 192,
+				"filename": "114-the-art-of-software-testing-3-edition.pdf",
+				"document_id": "0bbfe4b7-e507-43f0-a360-76fdffa3fdb3",
+				"file_type": "pdf"
+			}
+		},
+		{
+			"chunk_id": "c4b43d38-90aa-4b94-ae6b-98511610a300",
+			"text": "Ward Cunningham\n\nMartin Fowler\n\nJames Grenning\n\nJim Highsmith\n\nAndrew Hunt\n\nRon Jeffries\n\nJon Kern\n\nBrian Marick\n\nRobert C. Martin\n\nSteve Mellor\n\nKen Schwaber\n\nJeff Sutherland\n\nDave Thomas\n\n# 2001, the above authors this declaration may be freely copied in any form, but only in its entirety through this notice.\n\n## FIGURE 9.1 Manifesto of Agile Software Development.\n\nneglect or minimize the importance of the customer. Although Agile methodologies incorporate flexibility into their processes, the main emphasis is on customer satisfaction. The customer is a key component of the process; simply put, without customer involvement, the Agile method fails. And knowing their interaction is welcomed helps customers build satisfaction and confidence in the end product and development team. If the customer is not committed, then more traditional processes may be a better development choice.\n\nIronically, Agile development has no single development methodology or process; many rapid development approaches may be considered Agile. These approaches do, however, share three common threads: They rely on customer involvement, mandate significant testing, and have short, iterative development cycles. It is beyond the scope of this book to cover each methodology in detail, but in Table 9.1 we identify the methodologies considered Agile and give a brief description of each. (We urge you to learn\n\nTABLE 9.1 Agile Development Methodologies",
+			"score": 0.60391945,
+			"metadata": {
+				"chunk_index": 193,
+				"file_type": "pdf",
+				"filename": "114-the-art-of-software-testing-3-edition.pdf",
+				"token_count": 360,
+				"document_id": "0bbfe4b7-e507-43f0-a360-76fdffa3fdb3"
+			}
+		},
+		{
+			"chunk_id": "1181f3f0-be18-4973-b8d1-22263b993d0f",
+			"text": "Make no mistake, adopting an Agile development methodology is challenging. It takes the right combination of developers, managers, and customers to make it work. But in the end, the product will benefit from constant testing and heavy customer involvement.\n\n## Agile Testing\n\nIn essence, Agile testing is a form of collaborative testing, in that everyone is involved in the process through design, implementation, and execution of the test plan. Customers are involved in defining acceptance tests by defining use cases and program attributes. Developers collaborate with testers to build test harnesses that can test functionality automatically. Agile testing requires that everyone be engaged in the test process, which requires a lot of communication and collaboration.\n\nAs with most aspects of Agile development, Agile testing necessitates engaging the customer as early as possible and throughout the development cycle. For example, once developers produce a stable code base, customers should begin acceptance testing and provide feedback to the development team. It also means that testing is not a phase; rather, it is integrated with development efforts to compel continuous progress.\n\nTo ensure that the customer receives a stable product with which to perform acceptance testing, developers generally begin by writing unit tests first, then move to coding software units. The unit tests are failure tests, in that developers design them to cause their software to fail some requirement. Paradoxically, developers must write failing software to, in effect, test the test. Once test harnesses are in place, developers proceed to write software that passes the unit tests.\n\nTo facilitate the timely feedback needed for rapid development, Agile testing relies on automated testing. Development cycles are short, so time is valuable, and automated testing is more reliable than manual testing approaches. Not only is manual testing time-consuming, it may itself introduce bugs. Numerous open-source and commercial testing suites exist. It really does not matter which of these available testing suites is used, only\n\nthat developers and testers use one. Although some problems may require exploratory manual testing, automated testing is preferred.",
+			"score": 0.4965625,
+			"metadata": {
+				"filename": "114-the-art-of-software-testing-3-edition.pdf",
+				"token_count": 563,
+				"file_type": "pdf",
+				"chunk_index": 195,
+				"document_id": "0bbfe4b7-e507-43f0-a360-76fdffa3fdb3"
+			}
+		},
+		{
+			"chunk_id": "f0e4b954-2faf-485f-ad6e-d1b0c913d584",
+			"text": "that developers and testers use one. Although some problems may require exploratory manual testing, automated testing is preferred.\n\nAgile development environments often comprise only small teams of developers, who also act as testers. Larger projects with more resources may include an individual tester or a testing group. In either case, testers should not be considered finger-pointers. Their job is to move the project forward by providing feedback about the quality of the software so that developers can implement bug fixes and make requirement changes and general improvements.\n\nAgile testing fits well into the Extreme Programming methodology whereby developers create unit tests first, then the software. In the remainder of this chapter we cover Extreme Programming and Extreme Testing in more detail.\n\n## Extreme Programming and Testing\n\nIn the 1990s an innovative software development methodology termed Extreme Programming (XP) was born. A project manager named Kent Beck is credited with conceiving this lightweight, Agile development process, first testing it while working on a project at Daimler-Chrysler in 1996. Although several other Agile software development processes have since been created, XP is still the most popular. In fact, numerous opensource tools exist to support it, which is testimony to XP's popularity among developers and project managers.\n\nXP likely was developed to support the adoption of programming languages such as Java, Visual Basic, and C#.\n\nThese object-based languages allow developers to create large, complex applications much more quickly than with traditional languages such as C, Fortran, or COBOL. Developing with these languages often requires building general-purpose libraries to support the application's coding efforts. Methods for common tasks such as printing, sorting, networking, and statistical analysis are not standard components. Languages such as C# and Java ship with full-featured application programming interfaces (APIs) that eliminate or reduce the need for creating custom libraries.\n\nHowever, along with the benefits of rapid application development languages came liabilities. Although developers were creating applications much more quickly, their quality was not guaranteed. If an application compiled, it often failed to meet the customer's specifications or\n\nexpectations. The XP development methodology facilitates the creation of quality programs in short time frames. Although classical software processes still work, they often take too much time, which equates to lost income in the highly competitive arena of software development.",
+			"score": 0.47278,
+			"metadata": {
+				"filename": "114-the-art-of-software-testing-3-edition.pdf",
+				"document_id": "0bbfe4b7-e507-43f0-a360-76fdffa3fdb3",
+				"token_count": 655,
+				"file_type": "pdf",
+				"chunk_index": 196
+			}
+		},
+		{
+			"chunk_id": "5d31965a-c76b-499f-a292-e9220c24ada5",
+			"text": "The alert reader will realize that the most important component in a program tester's bag of tricks is the knowledge of how to write effective test cases; this is the subject of Chapter 3. Chapter 4 discusses the testing of individual modules or subroutines, followed in Chapter 5 by the testing of larger entities. Chapter 6 takes on the concept of user or usability testing, a component of software testing that always has been important, but is even more relevant today due to the advent of more complex software targeted at an ever broadening audience. Chapter 7 offers some practical advice on program debugging, while Chapter 8 delves into the concepts of extreme programming testing with emphasis on what has come to be called the ''agile environment.'' Chapter 9 shows how to use other features of program testing, which are detailed elsewhere in this book, with Web programming, including e-commerce systems, and the all new, highly interactive social networking sites. Chapter 10 describes how to test software developed for the mobile environment.\n\nWe direct this book at three major audiences. First, the professional programmer. Although we hope that not everything in this book will be new information to this audience, we believe it will add to the professional's knowledge of testing techniques. If the material allows this group to detect just one more bug in one program, the price of the book will have been recovered many times over.\n\nThe second audience is the project manager, who will benefit from the book's practical information on the management of the testing process. The third audience is the programming and computer science student, and our goal for them is twofold: to expose them to the problems of\n\nprogram testing, and provide a set of effective techniques. For this third group, we suggest the book be used as a supplement in programming courses such that students are exposed to the subject of software testing early in their education.\n\n1\n\n## A Self-Assessment Test\n\nS ince this book was first published over 30 years ago, software testing has become more difficult and easier than ever.",
+			"score": 0.43484940000000005,
+			"metadata": {
+				"document_id": "0bbfe4b7-e507-43f0-a360-76fdffa3fdb3",
+				"filename": "114-the-art-of-software-testing-3-edition.pdf",
+				"file_type": "pdf",
+				"chunk_index": 5,
+				"token_count": 531
+			}
+		}
+	],
+	"total_results": 5,
+	"search_time_seconds": 0.087
+}

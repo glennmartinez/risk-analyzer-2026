@@ -10,18 +10,22 @@ python-multipart
 pydantic
 pydantic-settings
 
-# Document parsing - Docling
+# Document parsing
 docling
 
 # Chunking and RAG - LlamaIndex
 llama-index-core
 
-# Vector database
+# Vector database - ChromaDB HTTP client
 chromadb
 
 # Embeddings
 sentence-transformers
 
+# Keyword extraction
+yake
+
 # Utilities
 httpx
 python-dotenv
+pymupdf
