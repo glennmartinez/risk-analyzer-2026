@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, FormEvent } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useChat } from "../api/hooks";
 import type { ChatMessage } from "../api/hooks";
 
@@ -8,6 +8,8 @@ export function ChatView() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  console.log("Rendering ChatView with messages:", messages);
+  console.log("Rending sendMessage", sendMessage);
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

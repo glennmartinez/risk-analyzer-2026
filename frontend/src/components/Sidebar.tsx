@@ -1,5 +1,11 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, MessageSquare, Shield } from "lucide-react";
+import {
+  LayoutDashboard,
+  MessageSquare,
+  PersonStandingIcon,
+  Shield,
+  TestTube,
+} from "lucide-react";
 
 export function Sidebar() {
   const location = useLocation();
@@ -11,10 +17,10 @@ export function Sidebar() {
       {/* Logo/Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <div className="w-6 h-6 bg-white/20 rounded"></div>
-          </div>
-          <span className="text-lg font-semibold text-gray-900">Prodex</span>
+          <PersonStandingIcon className="w-8 h-8 text-blue-600" />
+          <span className="text-lg font-semibold text-gray-900">
+            Risk Analyzer
+          </span>
         </div>
       </div>
 
@@ -54,6 +60,18 @@ export function Sidebar() {
         >
           <Shield className="w-5 h-5" />
           <span>Admin</span>
+        </Link>
+
+        <Link
+          to="/rag"
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+            isActive("/rag")
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+          }`}
+        >
+          <TestTube className="w-5 h-5 " />
+          <span>Rag Analysis</span>
         </Link>
       </nav>
 

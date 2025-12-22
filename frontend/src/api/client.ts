@@ -1,4 +1,10 @@
-import type { ChatRequest, ChatResponse, HealthResponse } from "./types";
+import type {
+  ChatRequest,
+  ChatResponse,
+  HealthResponse,
+  SearchQueryRequest,
+  SearchQueryResponse,
+} from "./types";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -19,7 +25,7 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options?: RequestInit
+    options?: RequestInit,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
@@ -56,7 +62,16 @@ class ApiClient {
       body: JSON.stringify(request),
     });
   }
-}
 
+  // Send a search query
+  async searchQuery(request: URLSearchParams): Promise<SearchQueryResponse> {
+    return this.request<SearchQueryResponse>(`/search/query?${request}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  }
+}
 export const apiClient = new ApiClient();
 export default apiClient;

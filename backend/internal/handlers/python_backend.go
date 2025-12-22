@@ -57,13 +57,21 @@ func proxyRequest(w http.ResponseWriter, r *http.Request, pythonPath string) {
 	}
 	defer resp.Body.Close()
 
-	// Copy response headers
-	for key, values := range resp.Header {
-		for _, value := range values {
-			w.Header().Add(key, value)
-		}
+	// Copy response headers, but skip CORS headers as they are handled by the middleware
+	corsHeaders := map[string]bool{
+		"Access-Control-Allow-Origin":      true,
+		"Access-Control-Allow-Methods":     true,
+		"Access-Control-Allow-Headers":     true,
+		"Access-Control-Allow-Credentials": true,
 	}
 
+	for key, values := range resp.Header {
+		if !corsHeaders[key] {
+			for _, value := range values {
+				w.Header().Add(key, value)
+			}
+		}
+	}
 	// Set status code
 	w.WriteHeader(resp.StatusCode)
 

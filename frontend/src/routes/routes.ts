@@ -7,6 +7,7 @@ import App from "../App";
 import { MainView } from "../views/MainView";
 import { Admin } from "../views/Admin";
 import ChatView from "../views/ChatView";
+import { RagView } from "../views/RagView";
 
 const rootRoute = createRootRoute({
   component: App,
@@ -30,8 +31,19 @@ const adminRoute = createRoute({
   component: Admin,
 });
 
+const ragRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/rag",
+  component: RagView,
+});
+
 // Building the route tree
-const routeTree = rootRoute.addChildren([indexRoute, chatRoute, adminRoute]);
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  chatRoute,
+  adminRoute,
+  ragRoute,
+]);
 
 export const Router = createRouter({
   routeTree,
