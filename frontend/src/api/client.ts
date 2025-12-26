@@ -2,6 +2,8 @@ import type {
   ChatRequest,
   ChatResponse,
   HealthResponse,
+  RAGChatRequest,
+  RAGChatResponse,
   SearchQueryRequest,
   SearchQueryResponse,
 } from "./types";
@@ -58,6 +60,14 @@ class ApiClient {
   // Send a chat message
   async chat(request: ChatRequest): Promise<ChatResponse> {
     return this.request<ChatResponse>("/chat", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  // Send a RAG chat message
+  async ragChat(request: RAGChatRequest): Promise<RAGChatResponse> {
+    return this.request<RAGChatResponse>("/chat/rag", {
       method: "POST",
       body: JSON.stringify(request),
     });

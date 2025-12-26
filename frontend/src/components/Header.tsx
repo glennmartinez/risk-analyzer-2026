@@ -2,10 +2,10 @@ import { Bell, Search } from "lucide-react";
 
 export function Header() {
   return (
-    <header className="bg-white border-b border-gray-200 px-8 py-4">
+    <header className="bg-white border-b border-gray-200 px-8 py-4 h-20 ">
       <div className="flex items-center justify-between">
         {/*<h1 className="text-2xl font-semibold text-gray-900">{section.title}</h1>*/}
-        <div>Risk Analyzer </div>
+        <div> </div>
         <div className="flex items-center gap-4">
           {/* User avatars */}
           <div className="flex items-center -space-x-2">

@@ -17,6 +17,27 @@ export interface ChatResponse {
   status: "success" | "error";
 }
 
+export interface RAGChatRequest {
+  message: string;
+  history?: ChatMessage[];
+  use_rag?: boolean;
+  max_chunks?: number;
+  collection_name?: string;
+}
+
+export interface RAGChatResponse {
+  message: string;
+  status: string;
+  context?: RAGContextChunk[];
+  query?: string;
+}
+
+export interface RAGContextChunk {
+  text: string;
+  score?: number;
+  metadata?: Record<string, any>;
+}
+
 // Health check response
 export interface HealthResponse {
   message: string;

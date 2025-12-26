@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     chunk_overlap: int = 50
 
     # PDF processing settings
-    max_pdf_pages: int = 20  # Limit pages to process (0 = no limit)
+    max_pdf_pages: int = 30  # Limit pages to process (0 = no limit)
 
     # Vector DB settings
     vector_db_type: str = "chroma"  # chroma, pinecone, qdrant, weaviate
@@ -44,7 +44,14 @@ class Settings(BaseSettings):
     # Embedding settings
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
 
-    # OpenAI (optional, for better embeddings)
+    # LLM settings for metadata extraction
+    llm_provider: str = "lmstudio"  # "lmstudio" (local) or "openai"
+    # NOTE: For LM Studio, use "gpt-3.5-turbo" (LM Studio ignores this and uses loaded model)
+    # LlamaIndex validates model names, so we must use a known OpenAI model name
+    llm_model: str = "gpt-3.5-turbo"  
+    lmstudio_base_url: str = "http://localhost:1234/v1"  # LM Studio default
+    
+    # OpenAI (required only if llm_provider="openai")
     openai_api_key: Optional[str] = None
 
     # Go backend integration

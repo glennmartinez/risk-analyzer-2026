@@ -8,6 +8,7 @@ import { MainView } from "../views/MainView";
 import { Admin } from "../views/Admin";
 import ChatView from "../views/ChatView";
 import { RagView } from "../views/RagView";
+import { LLMTestsView } from "../views/LLMTestsView";
 
 const rootRoute = createRootRoute({
   component: App,
@@ -37,12 +38,19 @@ const ragRoute = createRoute({
   component: RagView,
 });
 
+const llmTestsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/llm-tests",
+  component: LLMTestsView,
+});
+
 // Building the route tree
 const routeTree = rootRoute.addChildren([
   indexRoute,
   chatRoute,
   adminRoute,
   ragRoute,
+  llmTestsRoute,
 ]);
 
 export const Router = createRouter({

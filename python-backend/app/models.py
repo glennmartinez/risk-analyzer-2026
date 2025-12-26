@@ -15,6 +15,7 @@ class ChunkingStrategy(str, Enum):
     TOKEN = "token"
     RECURSIVE = "recursive"
     MARKDOWN = "markdown"
+    HIERARCHICAL = "hierarchical"
 
 
 class DocumentMetadata(BaseModel):

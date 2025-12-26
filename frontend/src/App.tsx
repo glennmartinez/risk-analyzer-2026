@@ -10,7 +10,7 @@ function App() {
       {/* Your header from earlier, if any */}
       <div className="flex">
         <Sidebar /> {/* No props needed! */}
-        <main className="flex-1 ml-64 p-2 ">
+        <main className="flex-1 ml-64">
           <Header /> {/* Adjust ml- for sidebar width */}
           <Outlet /> {/* Renders the matched route component */}
         </main>
