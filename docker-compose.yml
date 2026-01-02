@@ -10,12 +10,12 @@ services:
       MYSQL_USER: risk_user
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-risk_pass}
     ports:
-      - "3307:3306"  # Use non-standard port externally to avoid conflicts
+      - "3307:3306" # Use non-standard port externally to avoid conflicts
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql  # Optional init script
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql # Optional init script
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -54,12 +54,25 @@ services:
     volumes:
       - chroma_data:/chroma/chroma
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat" ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
+  redis:
+    image: redis:7.2
+    container_name: risk_analyzer_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   python-backend:
     build: ./python-backend
     container_name: risk_analyzer_python
@@ -68,6 +81,8 @@ services:
       UPLOAD_DIR: /app/uploads
       CHROMA_HOST: chromadb
       CHROMA_PORT: 8000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       GO_BACKEND_URL: http://app:8080
       CORS_ORIGINS: '["http://localhost:8080", "http://localhost:5173", "http://app:8080"]'
     ports:
@@ -77,8 +92,10 @@ services:
     depends_on:
       chromadb:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -88,3 +105,4 @@ volumes:
   mysql_data:
   python_uploads:
   chroma_data:
+  redis_data:

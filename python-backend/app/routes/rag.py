@@ -54,6 +54,7 @@ class RAGSearchRequest(BaseModel):
     collection: str = Field(default="documents", description="Collection to search")
     top_k: int = Field(default=5, ge=1, le=20, description="Number of results")
     filter_domain: Optional[str] = Field(default=None, description="Filter by domain")
+    document_id: Optional[str] = Field(default=None, description="Filter by document ID")
 
 
 class RAGSearchResult(BaseModel):
@@ -119,9 +120,15 @@ async def rag_search(request: RAGSearchRequest):
         query_embedding = model.encode([request.query])[0].tolist()
 
         # Build filter
-        where_filter = None
+        where_filter = {}
         if request.filter_domain:
-            where_filter = {"domain": request.filter_domain}
+            where_filter["domain"] = request.filter_domain
+        if request.document_id:
+            where_filter["document_id"] = request.document_id
+            
+        # If filter is empty, set to None
+        if not where_filter:
+            where_filter = None
 
         # Search
         results = collection.query(
@@ -178,10 +185,11 @@ async def rag_search_get(
     q: str = Query(..., description="Search query"),
     collection: str = Query(default="documents"),
     top_k: int = Query(default=5, ge=1, le=20),
+    document_id: Optional[str] = Query(default=None),
 ):
     """GET-based search for easy testing"""
     return await rag_search(
-        RAGSearchRequest(query=q, collection=collection, top_k=top_k)
+        RAGSearchRequest(query=q, collection=collection, top_k=top_k, document_id=document_id)
     )
 
 

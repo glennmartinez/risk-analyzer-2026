@@ -15,8 +15,6 @@ docling
 
 # Chunking and RAG - LlamaIndex
 llama-index-core
-llama-index-llms-openai
-llama-index-embeddings-openai
 
 # Vector database - ChromaDB HTTP client
 chromadb
@@ -31,3 +29,6 @@ yake
 httpx
 python-dotenv
 pymupdf
+
+# Rag benchmarking tool
+beir

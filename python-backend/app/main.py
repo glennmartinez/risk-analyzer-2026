@@ -18,6 +18,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Suppress verbose third-party library logging
+logging.getLogger("docling").setLevel(logging.WARNING)
+logging.getLogger("docling_core").setLevel(logging.WARNING)
+logging.getLogger("docling_parse").setLevel(logging.WARNING)
+logging.getLogger("pypdfium2").setLevel(logging.WARNING)
+logging.getLogger("PIL").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

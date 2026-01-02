@@ -5,6 +5,7 @@ Connects to ChromaDB server running in Docker
 """
 
 import logging
+import json
 from typing import Any, Dict, List, Optional
 
 import chromadb
@@ -102,6 +103,12 @@ class VectorStoreService:
             for key, value in chunk.metadata.items():
                 if isinstance(value, (str, int, float, bool)):
                     metadata[key] = value
+                elif isinstance(value, (list, dict)):
+                    # Serialize complex types to JSON string for ChromaDB
+                    try:
+                        metadata[key] = json.dumps(value)
+                    except Exception:
+                        pass
 
             metadatas.append(metadata)
             embeddings.append(embedding.tolist())
@@ -303,12 +310,21 @@ class VectorStoreService:
         chunks = []
         if results["ids"]:
             for idx, chunk_id in enumerate(results["ids"]):
+
+                metadata = results["metadatas"][idx] if results["metadatas"] else {}
+                
+                # Auto-parse JSON strings back to objects
+                for key, value in metadata.items():
+                    if isinstance(value, str) and (value.startswith('[') or value.startswith('{')):
+                        try:
+                            metadata[key] = json.loads(value)
+                        except (json.JSONDecodeError, TypeError):
+                            pass
+                            
                 chunk = {
                     "id": chunk_id,
                     "text": results["documents"][idx] if results["documents"] else "",
-                    "metadata": results["metadatas"][idx]
-                    if results["metadatas"]
-                    else {},
+                    "metadata": metadata,
                 }
                 chunks.append(chunk)
 

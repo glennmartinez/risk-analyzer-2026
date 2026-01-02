@@ -5,14 +5,15 @@ Supports metadata extraction (title, questions) via LLM
 """
 
 import logging
+import re
 import uuid
 from typing import Any, Dict, List, Optional
 
 from llama_index.core import Document, Settings
 from llama_index.core.extractors import (
+    KeywordExtractor,
     QuestionsAnsweredExtractor,
     TitleExtractor,
-    KeywordExtractor,
 )
 from llama_index.core.node_parser import (
     HierarchicalNodeParser,
@@ -52,7 +53,7 @@ class DocumentChunker:
         """Lazy-load LLM for metadata extraction (LM Studio or OpenAI)"""
         if self._llm is None:
             provider = self.settings.llm_provider.lower()
-            
+
             if provider == "lmstudio":
                 # LM Studio exposes an OpenAI-compatible API
                 self._llm = OpenAILLM(
@@ -90,9 +91,11 @@ class DocumentChunker:
             )
         return self._title_extractor
 
-    def _get_questions_extractor(self, num_questions: int = 3) -> QuestionsAnsweredExtractor:
+    def _get_questions_extractor(
+        self, num_questions: int = 3
+    ) -> QuestionsAnsweredExtractor:
         """Get or create questions extractor"""
-        
+
         # Define strict prompt to prevent "chatty" output and including answers
         question_gen_template = (
             "You are a question generator. Your task is to generate {num_questions} questions "
@@ -102,11 +105,11 @@ class DocumentChunker:
             "{context_str}\n"
             "----------------\n"
             "Rules:\n"
-            "1. Output ONLY the questions, one per line.\n"
-            "2. Do NOT include answers.\n"
+            "1. Output ONLY the questions, separated by newlines.\n"
+            "2. Do NOT provide answers to the questions.\n"
             "3. Do NOT number the questions.\n"
-            "4. Do NOT include any introductory or concluding text (like 'Here are the questions').\n"
-            "5. Make questions specific to the text provided.\n"
+            "4. Do NOT include any introductory text, labels like 'Question:', or headers.\n"
+            "5. The output should contain strictly the questions strings and nothing else.\n"
             "\n"
             "Questions:"
         )
@@ -120,10 +123,9 @@ class DocumentChunker:
             )
         return self._questions_extractor
 
-
     def _get_keyword_extractor(self, keywords: int = 5) -> KeywordExtractor:
         """Get or create keyword extractor"""
-        
+
         # Define strict prompt for keywords
         keyword_gen_template = (
             "You are a keyword extractor. Your task is to extract {keywords} distinctive keywords "
@@ -172,16 +174,18 @@ class DocumentChunker:
             extract_metadata: Whether to extract title/questions/keywords via LLM
             num_questions: Number of questions to generate per chunk (default: 3)
             num_keywords: Number of keywords to extract per chunk (default: 5)
-
-        Returns:
-            ChunkedDocument with text chunks
         """
         logger.info(
             f"Chunking document {parsed_doc.document_id} with strategy: {strategy}"
         )
 
         # Get the text to chunk (prefer markdown for better structure preservation)
+        # Note: Page limiting is already handled by the parser via Docling's page_range parameter
         text_to_chunk = parsed_doc.markdown_text or parsed_doc.raw_text
+
+        if not text_to_chunk:
+            logger.warning("No text content found in parsed document")
+            text_to_chunk = ""
 
         # Create LlamaIndex document
         doc_metadata = {
@@ -258,40 +262,50 @@ class DocumentChunker:
             return nodes
 
         logger.info(f"Extracting metadata from {len(nodes)} nodes via LLM...")
-        logger.info(f"Using LLM provider: {self.settings.llm_provider}, model: {self.settings.llm_model}")
+        logger.info(
+            f"Using LLM provider: {self.settings.llm_provider}, model: {self.settings.llm_model}"
+        )
 
         try:
             # Extract title (uses first N nodes to infer document title)
             logger.info("Starting title extraction...")
             title_extractor = self._get_title_extractor()
             nodes = title_extractor.process_nodes(nodes)
-            
+
             # Clean up the extracted title
             for node in nodes:
                 if "document_title" in node.metadata:
-                    node.metadata["document_title"] = self._clean_title(node.metadata["document_title"])
-            
+                    node.metadata["document_title"] = self._clean_title(
+                        node.metadata["document_title"]
+                    )
+
             logger.info("Title extraction complete")
 
             # Extract keywords for each node
             logger.info(f"Starting keyword extraction ({num_keywords} per chunk)...")
             keyword_extractor = self._get_keyword_extractor(num_keywords)
             nodes = keyword_extractor.process_nodes(nodes)
-            
+
             # Clean up extracted keywords
             for idx, node in enumerate(nodes):
                 if "excerpt_keywords" in node.metadata:
-                    raw_val = node.metadata['excerpt_keywords']
+                    raw_val = node.metadata["excerpt_keywords"]
                     logger.info(f"Raw keywords for node {idx}: {repr(raw_val)}")
-                    
+
                     # Ensure it's a clean string first
                     if isinstance(raw_val, str):
                         # Remove potentially hallucinated labels
-                        cleaned_str = raw_val.replace("Keywords:", "").replace("keywords:", "").strip()
+                        cleaned_str = (
+                            raw_val.replace("Keywords:", "")
+                            .replace("keywords:", "")
+                            .strip()
+                        )
                         # Use simple comma split
-                        keywords_list = [k.strip() for k in cleaned_str.split(',') if k.strip()]
+                        keywords_list = [
+                            k.strip() for k in cleaned_str.split(",") if k.strip()
+                        ]
                         # Store as comma-separated string for now (LlamaIndex/Chroma usually prefer strings or simple lists)
-                        # But consistency with other metadata suggests passing the list or a clean string. 
+                        # But consistency with other metadata suggests passing the list or a clean string.
                         # TextNode metadata is usually Dict[str, Any].
                         node.metadata["excerpt_keywords"] = ", ".join(keywords_list)
             logger.info("Keyword extraction complete")
@@ -302,43 +316,71 @@ class DocumentChunker:
             nodes = questions_extractor.process_nodes(nodes)
             logger.info("Questions extraction complete")
             # log the first 5 nodes
-            logger.info(f"First 5 nodes: {nodes[:5]}")  
-            
+            logger.info(f"First 5 nodes: {nodes[:5]}")
+
             # Clean up the extracted questions
             for idx, node in enumerate(nodes):
                 # DEBUG: Log full metadata keys and raw values
-                logger.info(f"Node {idx} full metadata keys: {list(node.metadata.keys())}")
-                if "questions_this_excerpt_can_answer" in node.metadata:
-                    raw_val = node.metadata['questions_this_excerpt_can_answer']
-                    logger.info(f"Raw questions for node {idx}: {repr(raw_val)}")
+                logger.info(f"Node {idx} metadata keys: {list(node.metadata.keys())}")
+
+                # Check ALL possible question keys
+                q_key = None
+                for k in node.metadata.keys():
+                    if "question" in k.lower():
+                        q_key = k
+                        break
+
+                if q_key:
+                    raw_val = node.metadata[q_key]
+                    logger.info(
+                        f"Using question key '{q_key}' with raw value:\n{repr(raw_val)}"
+                    )
+
+                    # Normalize key to 'questions'
+                    if q_key != "questions":
+                        node.metadata["questions"] = raw_val
+                        del node.metadata[q_key]
+
+                    if "questions" in node.metadata:
+                        raw_val = node.metadata["questions"]
                     # Clean it if it's there
                     if isinstance(raw_val, str):
                         # The prompt template should make this less necessary, but keep for robustness
-                        node.metadata["questions_this_excerpt_can_answer"] = [
-                            q.strip() for q in raw_val.split('\n') if q.strip() and not q.strip().startswith(('1.', '2.', '3.', '4.', '5.'))
+                        node.metadata["questions"] = [
+                            q.strip()
+                            for q in raw_val.split("\n")
+                            if q.strip()
+                            and not q.strip().startswith(("1.", "2.", "3.", "4.", "5."))
                         ]
                         # If the LLM returns numbered list, convert to list of strings
-                        if not node.metadata["questions_this_excerpt_can_answer"] and raw_val.strip().startswith('1.'):
-                            node.metadata["questions_this_excerpt_can_answer"] = [
-                                re.sub(r'^\d+\.\s*', '', q).strip() for q in raw_val.split('\n') if q.strip()
+                        if not node.metadata[
+                            "questions"
+                        ] and raw_val.strip().startswith("1."):
+                            node.metadata["questions"] = [
+                                re.sub(r"^\d+\.\s*", "", q).strip()
+                                for q in raw_val.split("\n")
+                                if q.strip()
                             ]
                         # Ensure it's a list of strings
-                        if not isinstance(node.metadata["questions_this_excerpt_can_answer"], list):
-                            node.metadata["questions_this_excerpt_can_answer"] = [str(node.metadata["questions_this_excerpt_can_answer"])]
+                        if not isinstance(node.metadata["questions"], list):
+                            node.metadata["questions"] = [
+                                str(node.metadata["questions"])
+                            ]
                 else:
                     logger.warning(f"No questions key for node {idx}")
                     # Attempt fallback check
                     for k in node.metadata.keys():
-                         if "question" in k.lower():
-                             logger.info(f"Found potential question key: {k} -> {str(node.metadata[k])[:50]}...")
-            
+                        if "question" in k.lower():
+                            logger.info(
+                                f"Found potential question key: {k} -> {str(node.metadata[k])[:50]}..."
+                            )
+
             logger.info(f"Questions extraction complete")
 
         except Exception as e:
             import traceback
-            logger.error(
-                f"Metadata extraction failed: {type(e).__name__}: {e}"
-            )
+
+            logger.error(f"Metadata extraction failed: {type(e).__name__}: {e}")
             logger.error(traceback.format_exc())
             # Return original nodes without extracted metadata
 
@@ -348,17 +390,17 @@ class DocumentChunker:
         """Clean up verbose LLM title output"""
         if not title:
             return ""
-            
+
         import re
-        
+
         # Strategy 1: Look for content inside quotes if multiple words
         # e.g. "The Art of Software Testing" -> The Art of Software Testing
         quotes_match = re.search(r'"([^"]{5,})"', title)
         if quotes_match:
             return quotes_match.group(1).strip()
-            
+
         # Strategy 2: Look for "Title: <title>" pattern
-        title_match = re.search(r'(?i)title:\s*(.+)$', title, re.MULTILINE)
+        title_match = re.search(r"(?i)title:\s*(.+)$", title, re.MULTILINE)
         if title_match:
             return title_match.group(1).strip()
 
@@ -372,11 +414,11 @@ class DocumentChunker:
             "Here is a title for the document:",
             "Title:",
         ]
-        
+
         for prefix in prefixes:
             if cleaned.lower().startswith(prefix.lower()):
-                cleaned = cleaned[len(prefix):].strip()
-        
+                cleaned = cleaned[len(prefix) :].strip()
+
         # If we have multiple lines (chatty output), try to find the shortest non-empty line
         # that looks like a title (or just the first line if cleaned)
         if "\n" in cleaned:
@@ -387,7 +429,7 @@ class DocumentChunker:
                     return line
             # Fallback to first line
             return lines[0] if lines else cleaned
-            
+
         return cleaned
 
     def chunk_text(
