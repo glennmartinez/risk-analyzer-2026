@@ -436,3 +436,26 @@ async def get_chunks(
     except Exception as e:
         logger.exception(f"Error getting chunks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/vector",
+    summary="List all documents in vector store",
+    description="Get a list of all unique documents stored in the vector database",
+)
+async def list_vector_documents(
+    collection_name: Optional[str] = Query(default=None),
+    vector_store: VectorStoreService = Depends(get_vector_store),
+):
+    """List all documents stored in the vector database"""
+    try:
+        documents = vector_store.list_documents(collection_name=collection_name)
+        return {
+            "documents": documents,
+            "total": len(documents),
+            "collection": collection_name
+            or vector_store.settings.chroma_collection_name,
+        }
+    except Exception as e:
+        logger.exception(f"Error listing vector documents: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

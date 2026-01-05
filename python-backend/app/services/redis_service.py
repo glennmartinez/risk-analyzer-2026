@@ -1,12 +1,14 @@
 import json
 import logging
-from typing import Dict, List, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
 
 import redis
+
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
+
 
 class DocumentRegistry:
     """
@@ -24,9 +26,9 @@ class DocumentRegistry:
                 port=settings.redis_port,
                 db=settings.redis_db,
                 password=settings.redis_password,
-                decode_responses=True
+                decode_responses=True,
             )
-            self.client.ping() # Check connection
+            self.client.ping()  # Check connection
         except redis.ConnectionError as e:
             logger.error(f"Failed to connect to Redis: {e}")
             raise
@@ -39,7 +41,7 @@ class DocumentRegistry:
                 "document_id": document_id,
                 "registered_at": datetime.now().isoformat(),
             }
-            
+
             # Merge provided metadata
             for k, v in metadata.items():
                 if isinstance(v, (dict, list, bool, int, float)):
@@ -52,7 +54,7 @@ class DocumentRegistry:
             pipe.hset(f"doc:{document_id}", mapping=flat_meta)
             pipe.sadd("docs:all", document_id)
             pipe.execute()
-            
+
             logger.info(f"Registered document {document_id} in Redis")
             return True
         except Exception as e:
@@ -65,22 +67,51 @@ class DocumentRegistry:
             doc = self.client.hgetall(f"doc:{document_id}")
             if not doc:
                 return None
-            return doc
+            return self._convert_types(doc)
         except Exception as e:
             logger.error(f"Error getting document {document_id}: {e}")
             return None
+
+    def _convert_types(self, doc: Dict) -> Dict:
+        """Convert Redis string values back to proper Python types"""
+        # Fields that should be integers
+        int_fields = {
+            "chunk_count",
+            "file_size",
+            "chunk_size",
+            "chunk_overlap",
+            "num_questions",
+            "max_pages",
+        }
+        # Fields that should be booleans
+        bool_fields = {"extract_metadata", "stored_in_vector_db", "is_example"}
+
+        result = {}
+        for k, v in doc.items():
+            if k in int_fields:
+                try:
+                    result[k] = int(v)
+                except (ValueError, TypeError):
+                    result[k] = 0
+            elif k in bool_fields:
+                result[k] = (
+                    v.lower() in ("true", "1", "yes") if isinstance(v, str) else bool(v)
+                )
+            else:
+                result[k] = v
+        return result
 
     def list_documents(self) -> List[Dict]:
         """List all registered documents"""
         try:
             doc_ids = self.client.smembers("docs:all")
             documents = []
-            
+
             for doc_id in doc_ids:
                 doc = self.get_document(doc_id)
                 if doc:
                     documents.append(doc)
-            
+
             return documents
         except Exception as e:
             logger.error(f"Error listing documents: {e}")

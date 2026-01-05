@@ -47,6 +47,302 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/ms/documents/chunks": {
+            "get": {
+                "description": "Get all chunks for a specific document from the vector store",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "microservice-documents"
+                ],
+                "summary": "Get chunks for a document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Document ID",
+                        "name": "document_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Maximum number of chunks",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Number of chunks to skip",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.GetDocumentChunksResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ms/documents/health": {
+            "get": {
+                "description": "Verify the Python document microservice is running",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "microservice-documents"
+                ],
+                "summary": "Check Python microservice health",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ms/documents/list": {
+            "get": {
+                "description": "Get a list of all documents registered in the Redis registry via Python microservice",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "microservice-documents"
+                ],
+                "summary": "List all registered documents",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.ListDocumentsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ms/documents/upload": {
+            "post": {
+                "description": "Upload a PDF or document file to be parsed, chunked, and optionally stored in vector DB",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "microservice-documents"
+                ],
+                "summary": "Upload and process a document",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Document file to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "sentence",
+                        "description": "Chunking strategy (sentence, semantic, markdown, hierarchical)",
+                        "name": "chunking_strategy",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 512,
+                        "description": "Target chunk size in tokens",
+                        "name": "chunk_size",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Overlap between chunks",
+                        "name": "chunk_overlap",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Store chunks in vector database",
+                        "name": "store_in_vector_db",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Extract tables from document",
+                        "name": "extract_tables",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Extract figures from document",
+                        "name": "extract_figures",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Extract metadata via LLM (title, questions, keywords)",
+                        "name": "extract_metadata",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "Number of questions to generate per chunk",
+                        "name": "num_questions",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 30,
+                        "description": "Maximum number of pages to process",
+                        "name": "max_pages",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Vector DB collection name",
+                        "name": "collection_name",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.UploadDocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ms/documents/vector": {
+            "get": {
+                "description": "Get a list of all unique documents stored in the vector database via Python microservice",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "microservice-documents"
+                ],
+                "summary": "List all documents in vector store",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.ListVectorDocumentsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/chat": {
             "post": {
                 "description": "Send a message to the LLM and get a response",
@@ -834,6 +1130,53 @@ const docTemplate = `{
                 "China"
             ]
         },
+        "models.Document": {
+            "type": "object",
+            "properties": {
+                "chunk_count": {
+                    "type": "integer"
+                },
+                "chunk_overlap": {
+                    "type": "integer"
+                },
+                "chunk_size": {
+                    "type": "integer"
+                },
+                "chunking_strategy": {
+                    "type": "string"
+                },
+                "collection": {
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "extract_metadata": {
+                    "type": "boolean"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "llm_model": {
+                    "type": "string"
+                },
+                "llm_provider": {
+                    "type": "string"
+                },
+                "max_pages": {
+                    "type": "integer"
+                },
+                "num_questions": {
+                    "type": "integer"
+                },
+                "registered_at": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Issue": {
             "type": "object",
             "properties": {
@@ -927,6 +1270,41 @@ const docTemplate = `{
                 }
             }
         },
+        "services.DocumentChunk": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.GetDocumentChunksResponse": {
+            "type": "object",
+            "properties": {
+                "chunks": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.DocumentChunk"
+                    }
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
         "services.KeywordResult": {
             "type": "object",
             "properties": {
@@ -940,6 +1318,81 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "word": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.ListDocumentsResponse": {
+            "type": "object",
+            "properties": {
+                "documents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Document"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.ListVectorDocumentsResponse": {
+            "type": "object",
+            "properties": {
+                "collection": {
+                    "type": "string"
+                },
+                "documents": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.VectorDocument"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.UploadDocumentResponse": {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "processing_time_ms": {
+                    "type": "number"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_chunks": {
+                    "type": "integer"
+                },
+                "vector_db_stored": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "services.VectorDocument": {
+            "type": "object",
+            "properties": {
+                "chunk_count": {
+                    "type": "integer"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "title": {
                     "type": "string"
                 }
             }

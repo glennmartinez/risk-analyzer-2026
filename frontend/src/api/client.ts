@@ -4,9 +4,14 @@ import type {
   HealthResponse,
   RAGChatRequest,
   RAGChatResponse,
-  SearchQueryRequest,
   SearchQueryResponse,
 } from "./types";
+import type {
+  DocumentResponse,
+  ListDocumentsResponse,
+  ListVectorDocumentsResponse,
+  GetDocumentChunksResponse,
+} from "../models/Documents";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -81,6 +86,61 @@ class ApiClient {
         "Content-Type": "application/json",
       },
     });
+  }
+
+  // Upload a document
+  async uploadDocument(formData: FormData): Promise<DocumentResponse> {
+    const url = `${this.baseUrl}/api/ms/documents/upload`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      body: formData, // No Content-Type header - browser sets it with boundary
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Upload failed: ${response.status} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  // List documents
+  async listDocuments(): Promise<ListDocumentsResponse> {
+    return this.request<ListDocumentsResponse>("/api/ms/documents/list");
+  }
+
+  // List vector documents
+  async listVectorDocuments(
+    collectionName?: string,
+  ): Promise<ListVectorDocumentsResponse> {
+    const params = collectionName
+      ? `?collection_name=${encodeURIComponent(collectionName)}`
+      : "";
+    return this.request<ListVectorDocumentsResponse>(
+      `/api/ms/documents/vector${params}`,
+    );
+  }
+
+  // Document service health check
+  async documentServiceHealth(): Promise<HealthResponse> {
+    return this.request<HealthResponse>("/api/ms/documents/health");
+  }
+
+  // Get chunks for a specific document
+  async getDocumentChunks(
+    documentId: string,
+    collectionName?: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<GetDocumentChunksResponse> {
+    const params = new URLSearchParams({ document_id: documentId });
+    if (collectionName) params.append("collection_name", collectionName);
+    if (limit) params.append("limit", limit.toString());
+    if (offset) params.append("offset", offset.toString());
+    return this.request<GetDocumentChunksResponse>(
+      `/api/ms/documents/chunks?${params}`,
+    );
   }
 }
 export const apiClient = new ApiClient();

@@ -41,6 +41,13 @@ func RegisterRoutes(router *mux.Router) {
 	// RAG-enabled chat routes
 	router.HandleFunc("/chat/rag", handlers.RAGChatHandler)
 
+	// Microservice document routes (via Go service layer)
+	router.HandleFunc("/api/ms/documents/list", handlers.ListDocumentsHandler).Methods("GET")
+	router.HandleFunc("/api/ms/documents/vector", handlers.ListVectorDocumentsHandler).Methods("GET")
+	router.HandleFunc("/api/ms/documents/health", handlers.DocumentServiceHealthHandler).Methods("GET")
+	router.HandleFunc("/api/ms/documents/upload", handlers.UploadDocumentHandler).Methods("POST")
+	router.HandleFunc("/api/ms/documents/chunks", handlers.GetDocumentChunksHandler).Methods("GET")
+
 	// Future API routes can be added here
 	// mux.HandleFunc("/api/v1/analyze", handlers.AnalyzeHandler)
 }

@@ -86,7 +86,7 @@ class DocumentChunker:
         """Get or create title extractor"""
         if self._title_extractor is None:
             self._title_extractor = TitleExtractor(
-                nodes=3,  # Use first 3 nodes to infer title
+                nodes=10,  # Use first 3 nodes to infer title
                 llm=self.llm,
             )
         return self._title_extractor

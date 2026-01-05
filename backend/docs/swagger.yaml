@@ -75,6 +75,37 @@ definitions:
     - Builds
     - ACLOS
     - China
+  models.Document:
+    properties:
+      chunk_count:
+        type: integer
+      chunk_overlap:
+        type: integer
+      chunk_size:
+        type: integer
+      chunking_strategy:
+        type: string
+      collection:
+        type: string
+      document_id:
+        type: string
+      extract_metadata:
+        type: boolean
+      file_size:
+        type: integer
+      filename:
+        type: string
+      llm_model:
+        type: string
+      llm_provider:
+        type: string
+      max_pages:
+        type: integer
+      num_questions:
+        type: integer
+      registered_at:
+        type: string
+    type: object
   models.Issue:
     properties:
       components:
@@ -140,6 +171,29 @@ definitions:
         description: The chunk text content
         type: string
     type: object
+  services.DocumentChunk:
+    properties:
+      id:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      text:
+        type: string
+    type: object
+  services.GetDocumentChunksResponse:
+    properties:
+      chunks:
+        items:
+          $ref: '#/definitions/services.DocumentChunk'
+        type: array
+      count:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
+    type: object
   services.KeywordResult:
     properties:
       frequency:
@@ -149,6 +203,55 @@ definitions:
       score:
         type: number
       word:
+        type: string
+    type: object
+  services.ListDocumentsResponse:
+    properties:
+      documents:
+        items:
+          $ref: '#/definitions/models.Document'
+        type: array
+      total:
+        type: integer
+    type: object
+  services.ListVectorDocumentsResponse:
+    properties:
+      collection:
+        type: string
+      documents:
+        items:
+          $ref: '#/definitions/services.VectorDocument'
+        type: array
+      total:
+        type: integer
+    type: object
+  services.UploadDocumentResponse:
+    properties:
+      document_id:
+        type: string
+      filename:
+        type: string
+      metadata:
+        additionalProperties: true
+        type: object
+      processing_time_ms:
+        type: number
+      status:
+        type: string
+      total_chunks:
+        type: integer
+      vector_db_stored:
+        type: boolean
+    type: object
+  services.VectorDocument:
+    properties:
+      chunk_count:
+        type: integer
+      document_id:
+        type: string
+      filename:
+        type: string
+      title:
         type: string
     type: object
 externalDocs:
@@ -183,6 +286,208 @@ paths:
       summary: Home page
       tags:
       - general
+  /api/ms/documents/chunks:
+    get:
+      consumes:
+      - application/json
+      description: Get all chunks for a specific document from the vector store
+      parameters:
+      - description: Document ID
+        in: query
+        name: document_id
+        required: true
+        type: string
+      - description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      - default: 100
+        description: Maximum number of chunks
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Number of chunks to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.GetDocumentChunksResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get chunks for a document
+      tags:
+      - microservice-documents
+  /api/ms/documents/health:
+    get:
+      consumes:
+      - application/json
+      description: Verify the Python document microservice is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Check Python microservice health
+      tags:
+      - microservice-documents
+  /api/ms/documents/list:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all documents registered in the Redis registry via
+        Python microservice
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.ListDocumentsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List all registered documents
+      tags:
+      - microservice-documents
+  /api/ms/documents/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a PDF or document file to be parsed, chunked, and optionally
+        stored in vector DB
+      parameters:
+      - description: Document file to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - default: sentence
+        description: Chunking strategy (sentence, semantic, markdown, hierarchical)
+        in: formData
+        name: chunking_strategy
+        type: string
+      - default: 512
+        description: Target chunk size in tokens
+        in: formData
+        name: chunk_size
+        type: integer
+      - default: 50
+        description: Overlap between chunks
+        in: formData
+        name: chunk_overlap
+        type: integer
+      - default: true
+        description: Store chunks in vector database
+        in: formData
+        name: store_in_vector_db
+        type: boolean
+      - default: true
+        description: Extract tables from document
+        in: formData
+        name: extract_tables
+        type: boolean
+      - default: true
+        description: Extract figures from document
+        in: formData
+        name: extract_figures
+        type: boolean
+      - default: false
+        description: Extract metadata via LLM (title, questions, keywords)
+        in: formData
+        name: extract_metadata
+        type: boolean
+      - default: 3
+        description: Number of questions to generate per chunk
+        in: formData
+        name: num_questions
+        type: integer
+      - default: 30
+        description: Maximum number of pages to process
+        in: formData
+        name: max_pages
+        type: integer
+      - description: Vector DB collection name
+        in: formData
+        name: collection_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.UploadDocumentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upload and process a document
+      tags:
+      - microservice-documents
+  /api/ms/documents/vector:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all unique documents stored in the vector database
+        via Python microservice
+      parameters:
+      - description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.ListVectorDocumentsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List all documents in vector store
+      tags:
+      - microservice-documents
   /chat:
     post:
       consumes:
