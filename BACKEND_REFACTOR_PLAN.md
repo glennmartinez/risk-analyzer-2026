@@ -344,30 +344,70 @@ type DocumentService struct {
 func (s *DocumentService) UploadDocument(ctx context.Context, 
     file io.Reader, 
     filename string, 
-    opts UploadOptions) (*Document, error) {
+    opts UploadOptions) (*Job, error) {
     
-    // 1. Call Python: Parse
-    parsed, err := s.pythonClient.ParseDocument(ctx, file, filename)
-    if err != nil {
-        return nil, fmt.Errorf("parse failed: %w", err)
+    // NEW ASYNC APPROACH:
+    // 1. Create job immediately
+    jobID := uuid.New().String()
+    job := &Job{
+        ID:       jobID,
+        Type:     JobTypeDocumentUpload,
+        Status:   JobStatusQueued,
+        Progress: 0,
+        Payload: map[string]interface{}{
+            "filename":   filename,
+            "collection": opts.Collection,
+            "chunk_size": opts.ChunkSize,
+        },
     }
     
+    // 2. Store file temporarily (or save bytes to payload)
+    // 3. Enqueue job in Redis
+    err := s.jobRepo.EnqueueJob(ctx, job)
+    if err != nil {
+        return nil, fmt.Errorf("failed to enqueue job: %w", err)
+    }
+    
+    // 4. Return job ID immediately to frontend
+    return job, nil
+}
+
+// Background worker processes the job:
+func (w *UploadWorker) ProcessJob(ctx context.Context, job *Job) error {
+    // Update: Processing
+    w.jobRepo.UpdateJobStatus(ctx, job.ID, JobStatusProcessing, 10, "Parsing document...")
+    
+    // 1. Call Python: Parse
+    parsed, err := w.pythonClient.ParseDocument(ctx, file, filename)
+    if err != nil {
+        return fmt.Errorf("parse failed: %w", err)
+    }
+    
+    // Update: 30% done
+    w.jobRepo.SetProgress(ctx, job.ID, 30, "Chunking text...")
+    
     // 2. Call Python: Chunk
-    chunks, err := s.pythonClient.ChunkText(ctx, ChunkRequest{
+    chunks, err := w.pythonClient.ChunkText(ctx, ChunkRequest{
         Text: parsed.Text,
         Strategy: opts.ChunkingStrategy,
         ChunkSize: opts.ChunkSize,
     })
     if err != nil {
-        return nil, fmt.Errorf("chunk failed: %w", err)
+        return fmt.Errorf("chunk failed: %w", err)
     }
     
+    // Update: 60% done
+    w.jobRepo.SetProgress(ctx, job.ID, 60, "Generating embeddings...")
+    
     // 3. Call Python: Embed
-    embeddings, err := s.pythonClient.GenerateEmbeddings(ctx, 
+    embeddings, err := w.pythonClient.GenerateEmbeddings(ctx, 
         extractTexts(chunks))
     if err != nil {
-        return nil, fmt.Errorf("embed failed: %w", err)
+        return fmt.Errorf("embed failed: %w", err)
     }
+    
+    // Update: 80% done
+    w.jobRepo.SetProgress(ctx, job.ID, 80, "Storing in vector DB...")
     
     // 4. Store in ChromaDB (Go owns this)
     docID := uuid.New().String()
@@ -1041,3 +1081,325 @@ The investment (~4-5 weeks) will pay off in:
 5. Performance benchmarks to hit?
 
 Let's discuss and refine this plan before starting implementation.
+
+---
+
+## Task Checklist
+
+### **Phase 1: Foundation - Add Persistence Layer to Go** 
+
+#### Task 1.1: Set Up Go Dependencies
+- [x] Add ChromaDB Go client: `go get github.com/amikos-tech/chroma-go`
+- [x] Add Redis Go client: `go get github.com/redis/go-redis/v9`
+- [x] Update `go.mod` and verify dependencies compile
+- [x] Test basic connectivity to ChromaDB (port 8001) - Note: Go client has v1/v2 API issues, will use direct HTTP calls
+- [x] Test basic connectivity to Redis (port 6379) - ✅ All tests passing
+
+#### Task 1.2: Create Database Connection Layer
+- [x] Create `backend/internal/db/chromadb.go` - ChromaDB connection wrapper
+- [x] Create `backend/internal/db/redis.go` - Redis connection wrapper
+- [x] Add connection pooling configuration
+- [x] Add health check methods for each database
+- [x] Write unit tests for connection handling
+
+#### Task 1.3: Create Repository Interfaces
+- [x] Create `backend/internal/repositories/vector_repository.go` interface
+- [x] Create `backend/internal/repositories/document_repository.go` interface
+- [x] Define all required methods (CRUD operations)
+- [x] Add proper error types and handling
+- [x] Document interfaces with examples
+
+#### Task 1.3.1: Create Job Queue Interface (ADDED - Critical for Async Operations)
+- [x] Create `backend/internal/repositories/job_repository.go` interface
+- [x] Define Job, JobStatus, JobType models
+- [x] Define UploadJobPayload and UploadJobResult
+- [x] Add job queue operations (enqueue, dequeue)
+- [x] Add job progress tracking
+- [x] Add validation helpers
+- [x] Document async upload workflow
+
+#### Task 1.4: Implement ChromaDB Repository
+- [x] Implement `CreateCollection(name string) error`
+- [x] Implement `DeleteCollection(name string) error`
+- [x] Implement `ListCollections() ([]string, error)`
+- [x] Implement `GetCollectionStats(name string) (*CollectionStats, error)`
+- [x] Implement `StoreChunks(collection string, chunks []Chunk) error`
+- [x] Implement `SearchChunks(collection, query string, topK int) ([]SearchResult, error)`
+- [x] Implement `DeleteDocument(collection, docID string) (int, error)`
+- [x] Implement `ListDocuments(collection string) ([]VectorDocument, error)`
+- [x] Write integration tests with test ChromaDB instance
+
+#### Task 1.5: Implement Redis Document Repository ✅
+- [x] Implement `Register(doc *Document) error`
+- [x] Implement `Get(docID string) (*Document, error)`
+- [x] Implement `List() ([]*Document, error)`
+- [x] Implement `Delete(docID string) error`
+- [x] Implement `Update(docID string, updates map[string]interface{}) error`
+- [x] Add transaction support for atomic operations
+- [x] Write integration tests with test Redis instance
+- [x] Implemented batch operations (RegisterBatch, GetBatch, DeleteBatch)
+- [x] Implemented query operations (ListByCollection, ListByStatus, CountByCollection, etc.)
+- [x] Implemented helper methods (GetStats, ListCollections, ClearCollection, etc.)
+- [x] Created comprehensive test suite with 762 lines of tests
+
+#### Task 1.6: Implement Redis Job Repository (ADDED - For Async Upload) ✅
+- [x] Implement `CreateJob(job *Job) error`
+- [x] Implement `GetJob(jobID string) (*Job, error)`
+- [x] Implement `UpdateJobStatus(jobID, status, progress, message) error`
+- [x] Implement `EnqueueJob(job *Job) error`
+- [x] Implement `DequeueJob(jobType JobType) (*Job, error)`
+- [x] Implement `SetProgress(jobID, progress, message) error`
+- [x] Implement job cleanup methods (CleanupCompletedJobs, CleanupFailedJobs)
+- [x] Write integration tests for job queue
+- [x] Test concurrent job processing
+- [x] Implemented priority-based queue with Redis sorted sets
+- [x] Implemented retry logic with RequeueFailedJobs
+- [x] Implemented ListJobs with filtering support
+- [x] Implemented GetStats helper method
+- [x] Created comprehensive test suite with 757 lines of tests
+
+#### Task 1.6.1: Update Domain Models ✅
+- [x] Update `backend/internal/models/document.go` with new fields
+- [x] Create `backend/internal/models/chunk.go`
+- [x] Create `backend/internal/models/collection.go`
+- [x] Create `backend/internal/models/job.go`
+- [x] Add JSON serialization tags
+- [x] Add validation methods
+- [x] Added DTO conversion methods (ToDTO/FromDTO)
+- [x] Added domain-specific validation logic
+- [x] Added helper types (DocumentStatus, JobStatus, JobType, etc.)
+- [x] Created 4 model files with comprehensive DTOs and validation
+
+#### Task 1.7: Create Background Worker Pattern (ADDED - For Job Processing) ✅
+- [x] Create `backend/internal/workers/worker.go` interface
+- [x] Create `backend/internal/workers/upload_worker.go` implementation
+- [x] Add worker pool management
+- [x] Add graceful shutdown handling
+- [x] Add error recovery and retry logic
+- [x] Write worker tests
+- [x] Implemented BaseWorker with statistics tracking
+- [x] Implemented WorkerPool for managing multiple workers
+- [x] Implemented UploadWorker with full document processing pipeline
+- [x] Added RecoverableJobProcessor for panic recovery
+- [x] Added configurable concurrency and retry settings
+- [x] Created comprehensive test suite with mocks (1286 lines total)
+- [x] Created detailed README with usage examples and best practices
+
+---
+
+### **Phase 2: Simplify Python Backend**
+
+#### Task 2.1: Create New Simplified Python Endpoints
+- [ ] Create `python-backend/app/routes/parse.py` - Parse endpoint
+- [ ] Create `python-backend/app/routes/chunk.py` - Chunk endpoint
+- [ ] Create `python-backend/app/routes/embed.py` - Embed endpoint
+- [ ] Create `python-backend/app/routes/metadata.py` - Metadata extraction endpoint
+- [ ] Update `python-backend/app/main.py` to include new routes
+- [ ] Write unit tests for each new endpoint
+
+#### Task 2.2: Create Python Embedder Service
+- [ ] Create `python-backend/app/services/embedder.py`
+- [ ] Extract embedding logic from vector_store.py
+- [ ] Add batch embedding support
+- [ ] Add model caching
+- [ ] Write unit tests
+
+#### Task 2.3: Update Python Models
+- [ ] Create Pydantic models for parse request/response
+- [ ] Create Pydantic models for chunk request/response
+- [ ] Create Pydantic models for embed request/response
+- [ ] Create Pydantic models for metadata request/response
+- [ ] Add validation rules
+
+#### Task 2.4: Remove Python Persistence (KEEP OLD ROUTES FOR NOW)
+- [ ] Comment out vector_store.py imports (don't delete yet)
+- [ ] Comment out redis_service.py imports (don't delete yet)
+- [ ] Update config.py to remove ChromaDB/Redis settings (keep for rollback)
+- [ ] Verify Python service still runs with new endpoints
+
+---
+
+### **Phase 3: Implement Go Orchestration Layer**
+
+#### Task 3.1: Create Python Client in Go
+- [ ] Create `backend/internal/services/python_client.go`
+- [ ] Implement `Parse(ctx, file, filename) (*ParsedDoc, error)`
+- [ ] Implement `Chunk(ctx, *ChunkRequest) ([]*Chunk, error)`
+- [ ] Implement `Embed(ctx, texts []string) ([][]float32, error)`
+- [ ] Implement `ExtractMetadata(ctx, text string) (*Metadata, error)`
+- [ ] Add retry logic and timeouts
+- [ ] Add connection pooling
+- [ ] Write unit tests with mock HTTP server
+
+#### Task 3.2: Create Document Service
+- [ ] Create `backend/internal/services/document_service.go`
+- [ ] Implement `UploadDocument(ctx, file, opts) (*Document, error)`
+- [ ] Implement `DeleteDocument(ctx, docID, collection) error`
+- [ ] Implement `ListDocuments(ctx, collection) ([]*Document, error)`
+- [ ] Implement `GetDocument(ctx, docID) (*Document, error)`
+- [ ] Add transaction-like rollback on errors
+- [ ] Add logging and metrics
+- [ ] Write unit tests with mocked dependencies
+
+#### Task 3.3: Create Search Service
+- [ ] Create `backend/internal/services/search_service.go`
+- [ ] Implement `SearchDocuments(ctx, query, collection, topK) (*SearchResponse, error)`
+- [ ] Implement collection validation before search
+- [ ] Add caching layer for frequent queries
+- [ ] Write unit tests
+
+#### Task 3.4: Create Collection Service
+- [ ] Create `backend/internal/services/collection_service.go`
+- [ ] Implement `CreateCollection(ctx, name string) error`
+- [ ] Implement `DeleteCollection(ctx, name string) error`
+- [ ] Implement `ListCollections(ctx) ([]string, error)`
+- [ ] Implement `GetCollectionStats(ctx, name) (*Stats, error)`
+- [ ] Add validation (prevent auto-creation)
+- [ ] Write unit tests
+
+#### Task 3.5: Create HTTP Handlers
+- [ ] Create `backend/internal/handlers/document_handler.go`
+- [ ] Create `backend/internal/handlers/search_handler.go`
+- [ ] Create `backend/internal/handlers/collection_handler.go`
+- [ ] Implement upload handler
+- [ ] Implement list documents handler
+- [ ] Implement delete document handler
+- [ ] Implement search handler
+- [ ] Implement collection CRUD handlers
+- [ ] Add request validation
+- [ ] Add error handling with proper HTTP codes
+- [ ] Write integration tests
+
+#### Task 3.6: Update Routes
+- [ ] Update `backend/internal/routes/routes.go`
+- [ ] Add new document routes
+- [ ] Add new search routes
+- [ ] Add new collection routes
+- [ ] Add feature flag for old vs new implementation
+- [ ] Keep old routes alongside new ones (for rollback)
+
+---
+
+### **Phase 4: Integration & Migration**
+
+#### Task 4.1: Integration Testing
+- [ ] Test full upload workflow (Go → Python → ChromaDB → Redis)
+- [ ] Test search workflow (Go → ChromaDB direct)
+- [ ] Test collection management (Go → ChromaDB direct)
+- [ ] Test error scenarios and rollbacks
+- [ ] Test with real documents (PDF, text, etc.)
+- [ ] Load testing with multiple concurrent uploads
+- [ ] Verify no ghost collections created
+
+#### Task 4.2: Update Frontend Integration
+- [ ] Update frontend API client to call new Go endpoints
+- [ ] Add feature flag in frontend for old/new backend
+- [ ] Test upload from UI
+- [ ] Test search from UI
+- [ ] Test document management from UI
+- [ ] Verify all existing features work
+
+#### Task 4.3: Parallel Running & Testing
+- [ ] Run old and new systems side-by-side
+- [ ] Compare response times (old vs new)
+- [ ] Compare results accuracy
+- [ ] Monitor error rates
+- [ ] Fix any discovered issues
+- [ ] Document performance improvements
+
+#### Task 4.4: Gradual Migration
+- [ ] Migrate upload endpoint (feature flag on)
+- [ ] Monitor for 24 hours
+- [ ] Migrate search endpoint
+- [ ] Monitor for 24 hours
+- [ ] Migrate collection management
+- [ ] Monitor for 24 hours
+- [ ] Verify all data consistency
+
+---
+
+### **Phase 5: Cleanup & Finalization**
+
+#### Task 5.1: Remove Old Python Code
+- [ ] Delete `python-backend/app/services/vector_store.py`
+- [ ] Delete `python-backend/app/services/redis_service.py`
+- [ ] Delete `python-backend/app/routes/documents.py`
+- [ ] Delete `python-backend/app/routes/search.py`
+- [ ] Delete `python-backend/app/routes/rag.py`
+- [ ] Remove ChromaDB from `requirements.txt`
+- [ ] Remove Redis from `requirements.txt`
+- [ ] Clean up unused imports
+
+#### Task 5.2: Remove Old Go Code
+- [ ] Delete `backend/internal/services/ms_documents.go`
+- [ ] Remove old route handlers
+- [ ] Remove feature flags (keep new implementation only)
+- [ ] Clean up unused imports
+
+#### Task 5.3: Update Configuration
+- [ ] Update `python-backend/app/config.py` (remove DB configs)
+- [ ] Update `docker-compose.yml` (if needed)
+- [ ] Update environment variables documentation
+- [ ] Add Go database connection configs
+- [ ] Test with clean environment
+
+#### Task 5.4: Documentation
+- [ ] Update `README.md` with new architecture
+- [ ] Document new API endpoints
+- [ ] Create architecture diagrams
+- [ ] Document Go services and repositories
+- [ ] Add code examples for common operations
+- [ ] Update deployment documentation
+
+#### Task 5.5: Performance & Monitoring
+- [ ] Add metrics/logging to all new Go services
+- [ ] Set up performance dashboards
+- [ ] Document performance improvements
+- [ ] Add alerting for errors
+- [ ] Create runbook for common issues
+
+#### Task 5.6: Final Testing
+- [ ] Full end-to-end testing
+- [ ] Regression testing (all old features work)
+- [ ] Load testing (handle expected traffic)
+- [ ] Security testing (no new vulnerabilities)
+- [ ] User acceptance testing
+- [ ] Sign-off from stakeholders
+
+---
+
+### **Progress Tracking**
+
+**Phase 1 (Foundation):** 4.5/9 tasks complete (50%) - Added 3 tasks for async job queue
+**Phase 2 (Python Simplification):** 0/4 tasks complete (0%)
+**Phase 3 (Go Orchestration):** 0/6 tasks complete (0%)
+**Phase 4 (Integration):** 0/4 tasks complete (0%)
+**Phase 5 (Cleanup):** 0/6 tasks complete (0%)
+
+**Overall Progress:** 4.5/29 major tasks complete (16%) - Includes async job queue infrastructure
+
+---
+
+### **Risk Mitigation**
+
+- [ ] Create rollback scripts for each phase
+- [ ] Set up monitoring before starting migration
+- [ ] Keep old system running during entire migration
+- [ ] Feature flags in place for instant rollback
+- [ ] Database backups before major changes
+- [ ] Communicate timeline to users
+- [ ] Have rollback plan tested and ready
+
+---
+
+### **Success Criteria**
+
+- [ ] All tests passing (unit, integration, e2e)
+- [ ] Performance improved by 30%+ on search operations
+- [ ] Zero ghost collections in production
+- [ ] Python LOC reduced by 60%
+- [ ] Clear code ownership and boundaries
+- [ ] Documentation complete and reviewed
+- [ ] Team trained on new architecture
+- [ ] Monitoring and alerting in place
+- [ ] Production running stable for 1 week

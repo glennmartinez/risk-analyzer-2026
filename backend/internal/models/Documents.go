@@ -1,76 +1,186 @@
 package models
 
+import (
+	"time"
+)
+
+// Document represents a document in the system with all metadata
 type Document struct {
-	ID                string `json:"document_id"`
-	RegisteredAt      string `json:"registered_at"`
-	Filename          string `json:"filename"`
-	Chunk_count       int    `json:"chunk_count"`
-	Collection        string `json:"collection"`
-	File_size         int    `json:"file_size"`
-	Chunking_strategy string `json:"chunking_strategy"`
-	Chunk_size        int    `json:"chunk_size"`
-	Chunk_overlap     int    `json:"chunk_overlap"`
-	Extract_metadata  bool   `json:"extract_metadata"`
-	Num_questions     int    `json:"num_questions"`
-	Max_pages         int    `json:"max_pages"`
-	Llm_provider      string `json:"llm_provider"`
-	Llm_model         string `json:"llm_model"`
+	ID               string                 `json:"document_id"`
+	Filename         string                 `json:"filename"`
+	Collection       string                 `json:"collection"`
+	ChunkCount       int                    `json:"chunk_count"`
+	FileSize         int64                  `json:"file_size,omitempty"`
+	Status           DocumentStatus         `json:"status"`
+	StoredInVectorDB bool                   `json:"stored_in_vector_db"`
+	CreatedAt        time.Time              `json:"created_at"`
+	UpdatedAt        time.Time              `json:"updated_at"`
+	Metadata         map[string]interface{} `json:"metadata,omitempty"`
+
+	// Processing metadata
+	ChunkingStrategy string `json:"chunking_strategy,omitempty"`
+	ChunkSize        int    `json:"chunk_size,omitempty"`
+	ChunkOverlap     int    `json:"chunk_overlap,omitempty"`
+	ExtractMetadata  bool   `json:"extract_metadata,omitempty"`
+	NumQuestions     int    `json:"num_questions,omitempty"`
+	MaxPages         int    `json:"max_pages,omitempty"`
+
+	// LLM metadata
+	LLMProvider string `json:"llm_provider,omitempty"`
+	LLMModel    string `json:"llm_model,omitempty"`
 }
 
-// create the from and to dto functions for Document
+// DocumentStatus represents the status of a document
+type DocumentStatus string
 
-func (d *Document) ToDTO() DocumentDTO {
-	return DocumentDTO{
-		ID:                d.ID,
-		RegisteredAt:      d.RegisteredAt,
-		Filename:          d.Filename,
-		Chunk_count:       d.Chunk_count,
-		Collection:        d.Collection,
-		File_size:         d.File_size,
-		Chunking_strategy: d.Chunking_strategy,
-		Chunk_size:        d.Chunk_size,
-		Chunk_overlap:     d.Chunk_overlap,
-		Extract_metadata:  d.Extract_metadata,
-		Num_questions:     d.Num_questions,
-		Max_pages:         d.Max_pages,
-		Llm_provider:      d.Llm_provider,
-		Llm_model:         d.Llm_model,
-	}
-}
-
-func DocumentFromDTO(dto DocumentDTO) Document {
-	return Document{
-		ID:                dto.ID,
-		RegisteredAt:      dto.RegisteredAt,
-		Filename:          dto.Filename,
-		Chunk_count:       dto.Chunk_count,
-		Collection:        dto.Collection,
-		File_size:         dto.File_size,
-		Chunking_strategy: dto.Chunking_strategy,
-		Chunk_size:        dto.Chunk_size,
-		Chunk_overlap:     dto.Chunk_overlap,
-		Extract_metadata:  dto.Extract_metadata,
-		Num_questions:     dto.Num_questions,
-		Max_pages:         dto.Max_pages,
-		Llm_provider:      dto.Llm_provider,
-		Llm_model:         dto.Llm_model,
-	}
-}
+const (
+	DocumentStatusPending    DocumentStatus = "pending"
+	DocumentStatusProcessing DocumentStatus = "processing"
+	DocumentStatusCompleted  DocumentStatus = "completed"
+	DocumentStatusFailed     DocumentStatus = "failed"
+	DocumentStatusDeleted    DocumentStatus = "deleted"
+)
 
 // DocumentDTO - API Request/Response (what clients see)
 type DocumentDTO struct {
-	ID                string `json:"document_id"`
-	RegisteredAt      string `json:"registered_at"`
-	Filename          string `json:"filename"`
-	Chunk_count       int    `json:"chunk_count"`
-	Collection        string `json:"collection"`
-	File_size         int    `json:"file_size"`
-	Chunking_strategy string `json:"chunking_strategy"`
-	Chunk_size        int    `json:"chunk_size"`
-	Chunk_overlap     int    `json:"chunk_overlap"`
-	Extract_metadata  bool   `json:"extract_metadata"`
-	Num_questions     int    `json:"num_questions"`
-	Max_pages         int    `json:"max_pages"`
-	Llm_provider      string `json:"llm_provider"`
-	Llm_model         string `json:"llm_model"`
+	ID               string                 `json:"document_id"`
+	Filename         string                 `json:"filename"`
+	Collection       string                 `json:"collection"`
+	ChunkCount       int                    `json:"chunk_count"`
+	FileSize         int64                  `json:"file_size,omitempty"`
+	Status           string                 `json:"status"`
+	StoredInVectorDB bool                   `json:"stored_in_vector_db"`
+	CreatedAt        string                 `json:"created_at"`
+	UpdatedAt        string                 `json:"updated_at"`
+	Metadata         map[string]interface{} `json:"metadata,omitempty"`
+	ChunkingStrategy string                 `json:"chunking_strategy,omitempty"`
+	ChunkSize        int                    `json:"chunk_size,omitempty"`
+	ChunkOverlap     int                    `json:"chunk_overlap,omitempty"`
+	ExtractMetadata  bool                   `json:"extract_metadata,omitempty"`
+	NumQuestions     int                    `json:"num_questions,omitempty"`
+	MaxPages         int                    `json:"max_pages,omitempty"`
+	LLMProvider      string                 `json:"llm_provider,omitempty"`
+	LLMModel         string                 `json:"llm_model,omitempty"`
+}
+
+// ToDTO converts Document domain model to DTO
+func (d *Document) ToDTO() DocumentDTO {
+	return DocumentDTO{
+		ID:               d.ID,
+		Filename:         d.Filename,
+		Collection:       d.Collection,
+		ChunkCount:       d.ChunkCount,
+		FileSize:         d.FileSize,
+		Status:           string(d.Status),
+		StoredInVectorDB: d.StoredInVectorDB,
+		CreatedAt:        d.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:        d.UpdatedAt.Format(time.RFC3339),
+		Metadata:         d.Metadata,
+		ChunkingStrategy: d.ChunkingStrategy,
+		ChunkSize:        d.ChunkSize,
+		ChunkOverlap:     d.ChunkOverlap,
+		ExtractMetadata:  d.ExtractMetadata,
+		NumQuestions:     d.NumQuestions,
+		MaxPages:         d.MaxPages,
+		LLMProvider:      d.LLMProvider,
+		LLMModel:         d.LLMModel,
+	}
+}
+
+// FromDTO converts DocumentDTO to Document domain model
+func DocumentFromDTO(dto DocumentDTO) (*Document, error) {
+	createdAt, err := time.Parse(time.RFC3339, dto.CreatedAt)
+	if err != nil {
+		createdAt = time.Now()
+	}
+
+	updatedAt, err := time.Parse(time.RFC3339, dto.UpdatedAt)
+	if err != nil {
+		updatedAt = time.Now()
+	}
+
+	return &Document{
+		ID:               dto.ID,
+		Filename:         dto.Filename,
+		Collection:       dto.Collection,
+		ChunkCount:       dto.ChunkCount,
+		FileSize:         dto.FileSize,
+		Status:           DocumentStatus(dto.Status),
+		StoredInVectorDB: dto.StoredInVectorDB,
+		CreatedAt:        createdAt,
+		UpdatedAt:        updatedAt,
+		Metadata:         dto.Metadata,
+		ChunkingStrategy: dto.ChunkingStrategy,
+		ChunkSize:        dto.ChunkSize,
+		ChunkOverlap:     dto.ChunkOverlap,
+		ExtractMetadata:  dto.ExtractMetadata,
+		NumQuestions:     dto.NumQuestions,
+		MaxPages:         dto.MaxPages,
+		LLMProvider:      dto.LLMProvider,
+		LLMModel:         dto.LLMModel,
+	}, nil
+}
+
+// Validate checks if the document is valid
+func (d *Document) Validate() error {
+	if d.ID == "" {
+		return &ValidationError{Field: "document_id", Message: "document ID is required"}
+	}
+	if d.Filename == "" {
+		return &ValidationError{Field: "filename", Message: "filename is required"}
+	}
+	if d.Collection == "" {
+		return &ValidationError{Field: "collection", Message: "collection is required"}
+	}
+	if d.ChunkCount < 0 {
+		return &ValidationError{Field: "chunk_count", Message: "chunk count cannot be negative"}
+	}
+	return nil
+}
+
+// IsValid checks if document status is valid
+func (s DocumentStatus) IsValid() bool {
+	switch s {
+	case DocumentStatusPending, DocumentStatusProcessing, DocumentStatusCompleted, DocumentStatusFailed, DocumentStatusDeleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// String returns the string representation of document status
+func (s DocumentStatus) String() string {
+	return string(s)
+}
+
+// ValidationError represents a validation error
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return e.Field + ": " + e.Message
+}
+
+// DocumentFilter represents filter criteria for document queries
+type DocumentFilter struct {
+	Collection       string
+	Status           DocumentStatus
+	StoredInVectorDB *bool
+	FilenamePattern  string
+	CreatedAfter     *time.Time
+	CreatedBefore    *time.Time
+	MinChunkCount    *int
+	MaxChunkCount    *int
+}
+
+// DocumentStats represents statistics about documents
+type DocumentStats struct {
+	TotalDocuments        int                    `json:"total_documents"`
+	DocumentsByStatus     map[DocumentStatus]int `json:"documents_by_status"`
+	DocumentsByCollection map[string]int         `json:"documents_by_collection"`
+	TotalChunks           int                    `json:"total_chunks"`
+	TotalSize             int64                  `json:"total_size"`
+	AverageChunkCount     float64                `json:"average_chunk_count"`
 }
