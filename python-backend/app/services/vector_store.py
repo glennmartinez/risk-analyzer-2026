@@ -141,7 +141,14 @@ class VectorStoreService:
         Returns:
             List of search results
         """
-        collection = self.get_or_create_collection(collection_name)
+        # Get collection - fail if it doesn't exist
+        collection_name_to_use = collection_name or self.settings.chroma_collection_name
+        try:
+            collection = self.chroma_client.get_collection(collection_name_to_use)
+        except Exception as e:
+            raise ValueError(
+                f"Collection '{collection_name_to_use}' does not exist. Available collections: {', '.join(self.list_collections())}"
+            )
 
         # Generate query embedding
         query_embedding = self.embedding_model.encode([query])[0].tolist()
@@ -197,7 +204,14 @@ class VectorStoreService:
         Returns:
             Number of chunks deleted
         """
-        collection = self.get_or_create_collection(collection_name)
+        # Get collection - must exist before deleting from it
+        collection_name_to_use = collection_name or self.settings.chroma_collection_name
+        try:
+            collection = self.chroma_client.get_collection(collection_name_to_use)
+        except Exception as e:
+            raise ValueError(
+                f"Collection '{collection_name_to_use}' does not exist. Available collections: {', '.join(self.list_collections())}"
+            )
 
         # Get chunks for this document
         results = collection.get(
@@ -222,7 +236,14 @@ class VectorStoreService:
         self, collection_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get statistics for a collection"""
-        collection = self.get_or_create_collection(collection_name)
+        # Get collection - must exist to get stats
+        collection_name_to_use = collection_name or self.settings.chroma_collection_name
+        try:
+            collection = self.chroma_client.get_collection(collection_name_to_use)
+        except Exception as e:
+            raise ValueError(
+                f"Collection '{collection_name_to_use}' does not exist. Available collections: {', '.join(self.list_collections())}"
+            )
 
         return {
             "name": collection.name,
@@ -302,7 +323,12 @@ class VectorStoreService:
         self, collection_name: str
     ) -> List[Dict[str, Any]]:
         """List documents from a specific collection"""
-        collection = self.get_or_create_collection(collection_name)
+        try:
+            collection = self.chroma_client.get_collection(collection_name)
+        except Exception as e:
+            raise ValueError(
+                f"Collection '{collection_name}' does not exist. Available collections: {', '.join(self.list_collections())}"
+            )
 
         total_count = collection.count()
         logger.info(f"Collection '{collection.name}' has {total_count} total chunks")
@@ -354,7 +380,14 @@ class VectorStoreService:
         Returns:
             Dict with chunks and pagination info
         """
-        collection = self.get_or_create_collection(collection_name)
+        # Get collection - must exist to get chunks
+        collection_name_to_use = collection_name or self.settings.chroma_collection_name
+        try:
+            collection = self.chroma_client.get_collection(collection_name_to_use)
+        except Exception as e:
+            raise ValueError(
+                f"Collection '{collection_name_to_use}' does not exist. Available collections: {', '.join(self.list_collections())}"
+            )
 
         # Build where clause if document_id provided
         where = {"document_id": document_id} if document_id else None
