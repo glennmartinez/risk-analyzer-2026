@@ -171,6 +171,28 @@ definitions:
         description: The chunk text content
         type: string
     type: object
+  services.DeleteCollectionResponse:
+    properties:
+      collection_name:
+        type: string
+      documents_removed_from_registry:
+        type: integer
+      success:
+        type: boolean
+      total_documents:
+        type: integer
+    type: object
+  services.DeleteDocumentResponse:
+    properties:
+      deleted_chunks:
+        type: integer
+      deleted_from_registry:
+        type: boolean
+      document_id:
+        type: string
+      success:
+        type: boolean
+    type: object
   services.DocumentChunk:
     properties:
       id:
@@ -247,6 +269,8 @@ definitions:
     properties:
       chunk_count:
         type: integer
+      collection:
+        type: string
       document_id:
         type: string
       filename:
@@ -286,6 +310,43 @@ paths:
       summary: Home page
       tags:
       - general
+  /api/ms/documents/{document_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a document from both vector store and Redis registry
+      parameters:
+      - description: Document ID
+        in: path
+        name: document_id
+        required: true
+        type: string
+      - description: Collection name
+        in: query
+        name: collection_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.DeleteDocumentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a document
+      tags:
+      - microservice-documents
   /api/ms/documents/chunks:
     get:
       consumes:
@@ -331,6 +392,40 @@ paths:
               type: string
             type: object
       summary: Get chunks for a document
+      tags:
+      - microservice-documents
+  /api/ms/documents/collection/{collection_name}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an entire collection from vector store and clean up Redis
+        registry
+      parameters:
+      - description: Collection name
+        in: path
+        name: collection_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.DeleteCollectionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a collection
       tags:
       - microservice-documents
   /api/ms/documents/health:

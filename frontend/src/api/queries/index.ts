@@ -10,6 +10,9 @@ export {
   useListVectorDocuments,
   useDocumentServiceHealth,
   useDocumentChunks,
+  useDeleteDocument,
+  useDeleteCollection,
+  useListCollections,
 } from "./documents";
 
 // Query keys for manual cache management

@@ -15,6 +15,8 @@ import type {
   ListDocumentsResponse,
   ListVectorDocumentsResponse,
   GetDocumentChunksResponse,
+  DeleteDocumentResponse,
+  DeleteCollectionResponse,
 } from "../../models/Documents";
 import { documentKeys, healthKeys } from "./keys";
 
@@ -102,5 +104,66 @@ export function useDocumentChunks(
     queryFn: () =>
       apiClient.getDocumentChunks(documentId!, collectionName, limit, offset),
     enabled: enabled && !!documentId,
+  });
+}
+
+/**
+ * Hook to delete a document from vector store and Redis
+ */
+export function useDeleteDocument(
+  options?: Omit<
+    UseMutationOptions<
+      DeleteDocumentResponse,
+      Error,
+      { documentId: string; collectionName?: string }
+    >,
+    "mutationFn"
+  >,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ documentId, collectionName }) =>
+      apiClient.deleteDocument(documentId, collectionName),
+    onSuccess: (...args) => {
+      // Invalidate all document lists to refetch after delete
+      queryClient.invalidateQueries({ queryKey: documentKeys.all });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
+  });
+}
+
+/**
+ * Hook to list all collections from vector store
+ */
+export function useListCollections(enabled = true) {
+  return useQuery<{ collections: string[] }>({
+    queryKey: ["collections"],
+    queryFn: () => apiClient.listCollections(),
+    enabled,
+  });
+}
+
+/**
+ * Hook to delete an entire collection from vector store and Redis
+ */
+export function useDeleteCollection(
+  options?: Omit<
+    UseMutationOptions<DeleteCollectionResponse, Error, string>,
+    "mutationFn"
+  >,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (collectionName: string) =>
+      apiClient.deleteCollection(collectionName),
+    onSuccess: (...args) => {
+      // Invalidate all document lists to refetch after delete
+      queryClient.invalidateQueries({ queryKey: documentKeys.all });
+      options?.onSuccess?.(...args);
+    },
+    ...options,
   });
 }

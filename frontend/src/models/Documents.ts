@@ -54,6 +54,7 @@ export interface VectorDocument {
   filename: string;
   title?: string;
   chunk_count: number;
+  collection: string;
 }
 
 // Response from /api/ms/documents/vector
@@ -76,4 +77,20 @@ export interface GetDocumentChunksResponse {
   count: number;
   limit: number;
   offset: number;
+}
+
+// Response from DELETE /api/ms/documents/{document_id}
+export interface DeleteDocumentResponse {
+  success: boolean;
+  document_id: string;
+  deleted_chunks: number;
+  deleted_from_registry: boolean;
+}
+
+// Response from DELETE /api/ms/documents/collection/{collection_name}
+export interface DeleteCollectionResponse {
+  success: boolean;
+  collection_name: string;
+  documents_removed_from_registry: number;
+  total_documents: number;
 }

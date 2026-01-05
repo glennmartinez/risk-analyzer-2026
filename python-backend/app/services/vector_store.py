@@ -4,8 +4,8 @@ Handles embedding storage and similarity search
 Connects to ChromaDB server running in Docker
 """
 
-import logging
 import json
+import logging
 from typing import Any, Dict, List, Optional
 
 import chromadb
@@ -247,15 +247,73 @@ class VectorStoreService:
         self, collection_name: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        List all unique documents in the collection.
+        List all unique documents in the collection(s).
+
+        If collection_name is provided, only lists documents from that collection.
+        If collection_name is None, lists documents from ALL collections.
 
         Returns:
             List of documents with their metadata and chunk counts
         """
+        # If a specific collection is requested, only search that one
+        if collection_name:
+            return self._list_documents_from_collection(collection_name)
+
+        # Otherwise, aggregate from all collections
+        all_documents: Dict[str, Dict[str, Any]] = {}
+        collections = self.chroma_client.list_collections()
+
+        logger.info(f"Listing documents from {len(collections)} collections")
+
+        for coll in collections:
+            try:
+                total_count = coll.count()
+                if total_count == 0:
+                    continue
+
+                results = coll.get(include=["metadatas"], limit=total_count)
+
+                for metadata in results["metadatas"] or []:
+                    doc_id = metadata.get("document_id", "unknown")
+
+                    if doc_id not in all_documents:
+                        all_documents[doc_id] = {
+                            "document_id": doc_id,
+                            "filename": metadata.get("filename"),
+                            "title": metadata.get("title"),
+                            "chunk_count": 0,
+                            "collection": coll.name,
+                        }
+
+                    all_documents[doc_id]["chunk_count"] += 1
+
+            except Exception as e:
+                logger.warning(
+                    f"Error listing documents from collection '{coll.name}': {e}"
+                )
+                continue
+
+        logger.info(
+            f"Found {len(all_documents)} unique documents across all collections"
+        )
+        return list(all_documents.values())
+
+    def _list_documents_from_collection(
+        self, collection_name: str
+    ) -> List[Dict[str, Any]]:
+        """List documents from a specific collection"""
         collection = self.get_or_create_collection(collection_name)
 
-        # Get all items from the collection
-        results = collection.get(include=["metadatas"])
+        total_count = collection.count()
+        logger.info(f"Collection '{collection.name}' has {total_count} total chunks")
+
+        if total_count == 0:
+            logger.info("No chunks found in collection")
+            return []
+
+        results = collection.get(include=["metadatas"], limit=total_count)
+
+        logger.info(f"Retrieved {len(results.get('ids', []))} chunks from collection")
 
         # Group by document_id
         documents: Dict[str, Dict[str, Any]] = {}
@@ -269,10 +327,12 @@ class VectorStoreService:
                     "filename": metadata.get("filename"),
                     "title": metadata.get("title"),
                     "chunk_count": 0,
+                    "collection": collection_name,
                 }
 
             documents[doc_id]["chunk_count"] += 1
 
+        logger.info(f"Found {len(documents)} unique documents in collection")
         return list(documents.values())
 
     def get_all_chunks(
@@ -310,17 +370,18 @@ class VectorStoreService:
         chunks = []
         if results["ids"]:
             for idx, chunk_id in enumerate(results["ids"]):
-
                 metadata = results["metadatas"][idx] if results["metadatas"] else {}
-                
+
                 # Auto-parse JSON strings back to objects
                 for key, value in metadata.items():
-                    if isinstance(value, str) and (value.startswith('[') or value.startswith('{')):
+                    if isinstance(value, str) and (
+                        value.startswith("[") or value.startswith("{")
+                    ):
                         try:
                             metadata[key] = json.loads(value)
                         except (json.JSONDecodeError, TypeError):
                             pass
-                            
+
                 chunk = {
                     "id": chunk_id,
                     "text": results["documents"][idx] if results["documents"] else "",

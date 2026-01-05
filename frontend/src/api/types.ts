@@ -48,6 +48,7 @@ export interface HealthResponse {
 export interface SearchQueryRequest {
   query: string;
   top_k: number;
+  collection?: string;
 }
 
 export interface SearchQueryResponse {

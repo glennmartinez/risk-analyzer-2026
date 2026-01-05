@@ -245,19 +245,58 @@ async def delete_document(
     document_id: str,
     collection_name: Optional[str] = None,
     vector_store: VectorStoreService = Depends(get_vector_store),
+    registry: DocumentRegistry = Depends(get_registry),
 ):
-    """Delete a document's chunks from the vector store"""
+    """Delete a document's chunks from the vector store and Redis registry"""
 
+    # Delete from vector store
     deleted_count = vector_store.delete_document(document_id, collection_name)
 
-    # Also remove from Redis if we have access to registry here, or pass it as dependency
-    # For now, let's keep it simple and just return the vector store result
-    # Ideally we should inject registry here and call delete_document
+    # Delete from Redis registry
+    redis_deleted = registry.delete_document(document_id)
 
     return {
         "success": True,
         "document_id": document_id,
         "deleted_chunks": deleted_count,
+        "deleted_from_registry": redis_deleted,
+    }
+
+
+@router.delete(
+    "/collection/{collection_name}",
+    summary="Delete a collection",
+    description="Delete an entire collection and all its documents from vector store and Redis",
+)
+async def delete_collection(
+    collection_name: str,
+    vector_store: VectorStoreService = Depends(get_vector_store),
+    registry: DocumentRegistry = Depends(get_registry),
+):
+    """Delete an entire collection and clean up Redis registry"""
+
+    # First, get all documents in this collection so we can clean up Redis
+    documents = vector_store.list_documents(collection_name=collection_name)
+
+    # Delete each document from Redis
+    redis_deleted_count = 0
+    for doc in documents:
+        if registry.delete_document(doc["document_id"]):
+            redis_deleted_count += 1
+
+    # Delete the collection from vector store
+    try:
+        vector_store.chroma_client.delete_collection(collection_name)
+        collection_deleted = True
+    except Exception as e:
+        logger.warning(f"Error deleting collection '{collection_name}': {e}")
+        collection_deleted = False
+
+    return {
+        "success": collection_deleted,
+        "collection_name": collection_name,
+        "documents_removed_from_registry": redis_deleted_count,
+        "total_documents": len(documents),
     }
 
 
@@ -453,8 +492,7 @@ async def list_vector_documents(
         return {
             "documents": documents,
             "total": len(documents),
-            "collection": collection_name
-            or vector_store.settings.chroma_collection_name,
+            "collection": collection_name or "all",
         }
     except Exception as e:
         logger.exception(f"Error listing vector documents: {e}")

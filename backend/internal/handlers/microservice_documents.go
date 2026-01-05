@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"risk-analyzer/internal/services"
 )
@@ -235,6 +236,75 @@ func parseInt(s string, defaultVal int) int {
 // parseBool parses string to bool
 func parseBool(s string) bool {
 	return s == "true" || s == "1" || s == "yes"
+}
+
+// DeleteDocumentHandler godoc
+// @Summary Delete a document
+// @Description Delete a document from both vector store and Redis registry
+// @Tags microservice-documents
+// @Accept json
+// @Produce json
+// @Param document_id path string true "Document ID"
+// @Param collection_name query string false "Collection name"
+// @Success 200 {object} services.DeleteDocumentResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/ms/documents/{document_id} [delete]
+func DeleteDocumentHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Extract document_id from URL path
+	path := r.URL.Path
+	parts := strings.Split(path, "/")
+	if len(parts) < 5 {
+		http.Error(w, "document_id is required", http.StatusBadRequest)
+		return
+	}
+	documentID := parts[len(parts)-1]
+
+	collectionName := r.URL.Query().Get("collection_name")
+
+	response, err := documentService.DeleteDocument(ctx, documentID, collectionName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// DeleteCollectionHandler godoc
+// @Summary Delete a collection
+// @Description Delete an entire collection from vector store and clean up Redis registry
+// @Tags microservice-documents
+// @Accept json
+// @Produce json
+// @Param collection_name path string true "Collection name"
+// @Success 200 {object} services.DeleteCollectionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/ms/documents/collection/{collection_name} [delete]
+func DeleteCollectionHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	// Extract collection_name from URL path
+	path := r.URL.Path
+	parts := strings.Split(path, "/")
+	if len(parts) < 6 {
+		http.Error(w, "collection_name is required", http.StatusBadRequest)
+		return
+	}
+	collectionName := parts[len(parts)-1]
+
+	response, err := documentService.DeleteCollection(ctx, collectionName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // GetDocumentChunksHandler godoc

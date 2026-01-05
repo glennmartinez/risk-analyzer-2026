@@ -80,6 +80,7 @@ type VectorDocument struct {
 	Filename   string `json:"filename"`
 	Title      string `json:"title"`
 	ChunkCount int    `json:"chunk_count"`
+	Collection string `json:"collection"`
 }
 
 // ListVectorDocuments fetches all documents from the vector store via Python microservice
@@ -290,6 +291,89 @@ func (s *DocumentService) GetDocumentChunks(ctx context.Context, documentID stri
 	}
 
 	var response GetDocumentChunksResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// DeleteDocumentResponse represents the response from deleting a document
+type DeleteDocumentResponse struct {
+	Success             bool   `json:"success"`
+	DocumentID          string `json:"document_id"`
+	DeletedChunks       int    `json:"deleted_chunks"`
+	DeletedFromRegistry bool   `json:"deleted_from_registry"`
+}
+
+// DeleteDocument deletes a document from both vector store and Redis
+func (s *DocumentService) DeleteDocument(ctx context.Context, documentID string, collectionName string) (*DeleteDocumentResponse, error) {
+	url := fmt.Sprintf("%s/documents/%s", s.baseURL, documentID)
+	if collectionName != "" {
+		url += "?collection_name=" + collectionName
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to Python backend: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Python backend returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var response DeleteDocumentResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// DeleteCollectionResponse represents the response from deleting a collection
+type DeleteCollectionResponse struct {
+	Success                      bool   `json:"success"`
+	CollectionName               string `json:"collection_name"`
+	DocumentsRemovedFromRegistry int    `json:"documents_removed_from_registry"`
+	TotalDocuments               int    `json:"total_documents"`
+}
+
+// DeleteCollection deletes an entire collection from vector store and cleans up Redis
+func (s *DocumentService) DeleteCollection(ctx context.Context, collectionName string) (*DeleteCollectionResponse, error) {
+	url := fmt.Sprintf("%s/documents/collection/%s", s.baseURL, collectionName)
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to Python backend: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Python backend returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var response DeleteCollectionResponse
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}

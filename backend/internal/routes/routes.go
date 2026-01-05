@@ -47,6 +47,8 @@ func RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/api/ms/documents/health", handlers.DocumentServiceHealthHandler).Methods("GET")
 	router.HandleFunc("/api/ms/documents/upload", handlers.UploadDocumentHandler).Methods("POST")
 	router.HandleFunc("/api/ms/documents/chunks", handlers.GetDocumentChunksHandler).Methods("GET")
+	router.HandleFunc("/api/ms/documents/collection/{collection_name}", handlers.DeleteCollectionHandler).Methods("DELETE")
+	router.HandleFunc("/api/ms/documents/{document_id}", handlers.DeleteDocumentHandler).Methods("DELETE")
 
 	// Future API routes can be added here
 	// mux.HandleFunc("/api/v1/analyze", handlers.AnalyzeHandler)

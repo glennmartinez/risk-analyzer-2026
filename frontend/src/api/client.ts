@@ -11,6 +11,8 @@ import type {
   ListDocumentsResponse,
   ListVectorDocumentsResponse,
   GetDocumentChunksResponse,
+  DeleteDocumentResponse,
+  DeleteCollectionResponse,
 } from "../models/Documents";
 
 const API_BASE_URL = "http://localhost:8080";
@@ -141,6 +143,53 @@ class ApiClient {
     return this.request<GetDocumentChunksResponse>(
       `/api/ms/documents/chunks?${params}`,
     );
+  }
+
+  // Delete a document from vector store and Redis
+  async deleteDocument(
+    documentId: string,
+    collectionName?: string,
+  ): Promise<DeleteDocumentResponse> {
+    const params = collectionName
+      ? `?collection_name=${encodeURIComponent(collectionName)}`
+      : "";
+    const url = `${this.baseUrl}/api/ms/documents/${documentId}${params}`;
+
+    const response = await fetch(url, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Delete failed: ${response.status} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+
+  // Delete an entire collection from vector store and Redis
+  async deleteCollection(
+    collectionName: string,
+  ): Promise<DeleteCollectionResponse> {
+    const url = `${this.baseUrl}/api/ms/documents/collection/${encodeURIComponent(collectionName)}`;
+
+    const response = await fetch(url, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Delete collection failed: ${response.status} - ${errorText}`,
+      );
+    }
+
+    return response.json();
+  }
+
+  // List all collections from vector store
+  async listCollections(): Promise<{ collections: string[] }> {
+    return this.request<{ collections: string[] }>("/search/collections");
   }
 }
 export const apiClient = new ApiClient();

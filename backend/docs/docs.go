@@ -117,6 +117,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/ms/documents/collection/{collection_name}": {
+            "delete": {
+                "description": "Delete an entire collection from vector store and clean up Redis registry",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "microservice-documents"
+                ],
+                "summary": "Delete a collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.DeleteCollectionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/ms/documents/health": {
             "get": {
                 "description": "Verify the Python document microservice is running",
@@ -329,6 +379,62 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/services.ListVectorDocumentsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ms/documents/{document_id}": {
+            "delete": {
+                "description": "Delete a document from both vector store and Redis registry",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "microservice-documents"
+                ],
+                "summary": "Delete a document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Document ID",
+                        "name": "document_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "collection_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.DeleteDocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
@@ -1270,6 +1376,40 @@ const docTemplate = `{
                 }
             }
         },
+        "services.DeleteCollectionResponse": {
+            "type": "object",
+            "properties": {
+                "collection_name": {
+                    "type": "string"
+                },
+                "documents_removed_from_registry": {
+                    "type": "integer"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "total_documents": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.DeleteDocumentResponse": {
+            "type": "object",
+            "properties": {
+                "deleted_chunks": {
+                    "type": "integer"
+                },
+                "deleted_from_registry": {
+                    "type": "boolean"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
         "services.DocumentChunk": {
             "type": "object",
             "properties": {
@@ -1385,6 +1525,9 @@ const docTemplate = `{
             "properties": {
                 "chunk_count": {
                     "type": "integer"
+                },
+                "collection": {
+                    "type": "string"
                 },
                 "document_id": {
                     "type": "string"
