@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"risk-analyzer/internal/db"
 )
@@ -151,9 +152,37 @@ func (r *ChromaVectorRepository) StoreChunks(ctx context.Context, collectionName
 			metadata["token_count"] = *chunk.TokenCount
 		}
 
-		// Merge custom metadata
+		jsonBytes, _ := json.Marshal(chunk.Metadata["keywords"])
+		fmt.Println(string(jsonBytes))
+		questionsBytes, _ := json.Marshal(chunk.Metadata["questions"])
+		fmt.Println(string(questionsBytes))
+		// Merge custom metadata, converting arrays to JSON strings for ChromaDB compatibility
 		for k, v := range chunk.Metadata {
-			metadata[k] = v
+			// ChromaDB only supports simple types (string, int, float, bool)
+			// Arrays and objects must be serialized to JSON strings
+			// log the metadata value here for debugging
+			//
+
+			switch val := v.(type) {
+			case []string:
+				// Convert string arrays to JSON
+				if jsonBytes, err := json.Marshal(val); err == nil {
+					metadata[k] = string(jsonBytes)
+				}
+			case []interface{}:
+				// Convert interface arrays to JSON
+				if jsonBytes, err := json.Marshal(val); err == nil {
+					metadata[k] = string(jsonBytes)
+				}
+			case map[string]interface{}:
+				// Convert maps to JSON
+				if jsonBytes, err := json.Marshal(val); err == nil {
+					metadata[k] = string(jsonBytes)
+				}
+			default:
+				// Simple types pass through directly
+				metadata[k] = v
+			}
 		}
 
 		metadatas[i] = metadata
@@ -239,15 +268,27 @@ func (r *ChromaVectorRepository) DeleteDocument(ctx context.Context, collectionN
 		return 0, CollectionNotFoundError(collectionName)
 	}
 
-	// Note: ChromaDB's current Go client doesn't have direct support for deleting by metadata filter
-	// We would need to:
-	// 1. Query all chunks with document_id filter to get their IDs
-	// 2. Delete those chunks by ID
-	// This is not implemented in current client version
+	// Step 1: Get all chunks for this document
+	where := map[string]interface{}{
+		"document_id": documentID,
+	}
+	result, err := r.client.GetDocuments(ctx, collectionName, where, 0, 0, false)
+	if err != nil {
+		return 0, NewVectorRepositoryError("delete_document", err, "failed to get chunks for document")
+	}
 
-	// For now, return 0 and error indicating this needs implementation
-	// This will be implemented once we have better ChromaDB client support or direct API calls
-	return 0, NewVectorRepositoryError("delete_document", nil, "delete by document_id not yet implemented - use DeleteChunks with explicit chunk IDs")
+	if len(result.IDs) == 0 {
+		// No chunks found for this document
+		return 0, nil
+	}
+
+	// Step 2: Delete all chunks by their IDs
+	err = r.client.DeleteDocuments(ctx, collectionName, result.IDs)
+	if err != nil {
+		return 0, NewVectorRepositoryError("delete_document", err, fmt.Sprintf("failed to delete %d chunks", len(result.IDs)))
+	}
+
+	return len(result.IDs), nil
 }
 
 // DeleteChunks deletes specific chunks by their IDs
@@ -281,6 +322,91 @@ func (r *ChromaVectorRepository) GetChunk(ctx context.Context, collectionName st
 	return nil, NewVectorRepositoryError("get_chunk", nil, "get_chunk not yet implemented - ChromaDB client limitation")
 }
 
+// GetDocumentChunks retrieves all chunks for a specific document
+func (r *ChromaVectorRepository) GetDocumentChunks(ctx context.Context, collectionName string, documentID string, limit int, offset int) ([]*Chunk, int, error) {
+	// Verify collection exists
+	exists, err := r.CollectionExists(ctx, collectionName)
+	if err != nil {
+		return nil, 0, NewVectorRepositoryError("get_document_chunks", err, "")
+	}
+	if !exists {
+		return nil, 0, CollectionNotFoundError(collectionName)
+	}
+
+	// Build where filter for document_id
+	var where map[string]interface{}
+	if documentID != "" {
+		where = map[string]interface{}{
+			"document_id": documentID,
+		}
+	}
+
+	// Get documents from ChromaDB
+	result, err := r.client.GetDocuments(ctx, collectionName, where, limit, offset, false)
+	if err != nil {
+		return nil, 0, NewVectorRepositoryError("get_document_chunks", err, "failed to get chunks from ChromaDB")
+	}
+
+	// Convert to Chunk format
+	chunks := make([]*Chunk, len(result.IDs))
+	for i, id := range result.IDs {
+		metadata := make(map[string]interface{})
+		if i < len(result.Metadatas) {
+			metadata = result.Metadatas[i]
+		}
+
+		text := ""
+		if i < len(result.Documents) {
+			text = result.Documents[i]
+		}
+
+		// Extract document_id from metadata
+		docID := ""
+		if d, ok := metadata["document_id"].(string); ok {
+			docID = d
+		}
+
+		// Extract chunk_index from metadata
+		chunkIndex := 0
+		if ci, ok := metadata["chunk_index"].(float64); ok {
+			chunkIndex = int(ci)
+		}
+
+		// Extract optional fields
+		var pageNumber *int
+		if pn, ok := metadata["page_number"].(float64); ok {
+			p := int(pn)
+			pageNumber = &p
+		}
+
+		var tokenCount *int
+		if tc, ok := metadata["token_count"].(float64); ok {
+			t := int(tc)
+			tokenCount = &t
+		}
+
+		chunks[i] = &Chunk{
+			ID:         id,
+			DocumentID: docID,
+			Text:       text,
+			Metadata:   metadata,
+			ChunkIndex: chunkIndex,
+			PageNumber: pageNumber,
+			TokenCount: tokenCount,
+		}
+	}
+
+	// Get total count (without pagination)
+	totalCount := len(chunks)
+	if limit > 0 && len(chunks) == limit {
+		// If we hit the limit, there might be more - get actual count
+		// For now, just return what we have; a proper implementation would count all
+		totalCount = len(chunks)
+	}
+
+	return chunks, totalCount, nil
+}
+
 // ListDocuments lists all unique documents in a collection
 func (r *ChromaVectorRepository) ListDocuments(ctx context.Context, collectionName string) ([]*VectorDocument, error) {
 	// Verify collection exists
@@ -292,10 +418,60 @@ func (r *ChromaVectorRepository) ListDocuments(ctx context.Context, collectionNa
 		return nil, CollectionNotFoundError(collectionName)
 	}
 
-	// Note: This requires querying all chunks and aggregating by document_id
-	// With current ChromaDB Go client, this is challenging
-	// Return empty list for now - will implement when client supports better metadata queries
-	return []*VectorDocument{}, nil
+	// Fetch all chunks from the collection to aggregate by document_id
+	result, err := r.client.GetDocuments(ctx, collectionName, nil, 0, 0, false)
+	if err != nil {
+		return nil, NewVectorRepositoryError("list_documents", err, "failed to get documents from ChromaDB")
+	}
+
+	// Aggregate by document_id
+	docMap := make(map[string]*VectorDocument)
+	for i, metadata := range result.Metadatas {
+		docID := ""
+		if d, ok := metadata["document_id"].(string); ok {
+			docID = d
+		}
+
+		if docID == "" {
+			continue
+		}
+
+		if doc, exists := docMap[docID]; exists {
+			// Increment chunk count for existing document
+			doc.ChunkCount++
+		} else {
+			// Create new document entry
+			filename := ""
+			if f, ok := metadata["filename"].(string); ok {
+				filename = f
+			}
+			title := ""
+			if t, ok := metadata["title"].(string); ok {
+				title = t
+			}
+
+			docMap[docID] = &VectorDocument{
+				DocumentID: docID,
+				Filename:   filename,
+				Title:      title,
+				ChunkCount: 1,
+				Collection: collectionName,
+			}
+		}
+
+		// Avoid processing too many items (safety limit)
+		if i > 10000 {
+			break
+		}
+	}
+
+	// Convert map to slice
+	docs := make([]*VectorDocument, 0, len(docMap))
+	for _, doc := range docMap {
+		docs = append(docs, doc)
+	}
+
+	return docs, nil
 }
 
 // CountDocuments counts unique documents in a collection

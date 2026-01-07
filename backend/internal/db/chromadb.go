@@ -42,6 +42,14 @@ type CollectionStats struct {
 	Metadata map[string]interface{} `json:"metadata"`
 }
 
+// GetResponse represents the response from a get request
+type GetResponse struct {
+	IDs        []string                 `json:"ids"`
+	Documents  []string                 `json:"documents"`
+	Metadatas  []map[string]interface{} `json:"metadatas"`
+	Embeddings [][]float32              `json:"embeddings,omitempty"`
+}
+
 // NewChromaDBClient creates a new ChromaDB client with v2 API support
 func NewChromaDBClient(config ChromaDBConfig) *ChromaDBClient {
 	if config.Tenant == "" {
@@ -54,7 +62,9 @@ func NewChromaDBClient(config ChromaDBConfig) *ChromaDBClient {
 		config.Timeout = 30 * time.Second
 	}
 
-	baseURL := fmt.Sprintf("http://%s:%d/api/v1", config.Host, config.Port)
+	// ChromaDB v2 API uses tenant and database in the path
+	baseURL := fmt.Sprintf("http://%s:%d/api/v2/tenants/%s/databases/%s",
+		config.Host, config.Port, config.Tenant, config.Database)
 
 	return &ChromaDBClient{
 		baseURL: baseURL,
@@ -68,7 +78,12 @@ func NewChromaDBClient(config ChromaDBConfig) *ChromaDBClient {
 
 // Heartbeat checks if ChromaDB is alive
 func (c *ChromaDBClient) Heartbeat(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", c.baseURL+"/heartbeat", nil)
+	// Extract host:port from baseURL and use global heartbeat endpoint
+	// baseURL format: http://host:port/api/v2/tenants/X/databases/Y
+	parts := c.baseURL[7:] // Remove "http://"
+	hostPort := parts[:len(parts)-len("/api/v2/tenants/")-len(c.tenant)-len("/databases/")-len(c.database)]
+	heartbeatURL := fmt.Sprintf("http://%s/api/v2/heartbeat", hostPort)
+	req, err := http.NewRequestWithContext(ctx, "GET", heartbeatURL, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create heartbeat request: %w", err)
 	}
@@ -88,8 +103,7 @@ func (c *ChromaDBClient) Heartbeat(ctx context.Context) error {
 
 // ListCollections returns all collections
 func (c *ChromaDBClient) ListCollections(ctx context.Context) ([]Collection, error) {
-	url := fmt.Sprintf("%s/collections?tenant=%s&database=%s",
-		c.baseURL, c.tenant, c.database)
+	url := fmt.Sprintf("%s/collections", c.baseURL)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -133,8 +147,7 @@ func (c *ChromaDBClient) CreateCollection(ctx context.Context, name string, meta
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/collections?tenant=%s&database=%s",
-		c.baseURL, c.tenant, c.database)
+	url := fmt.Sprintf("%s/collections", c.baseURL)
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
 	if err != nil {
@@ -163,8 +176,7 @@ func (c *ChromaDBClient) CreateCollection(ctx context.Context, name string, meta
 
 // GetCollection retrieves a collection by name
 func (c *ChromaDBClient) GetCollection(ctx context.Context, name string) (*Collection, error) {
-	url := fmt.Sprintf("%s/collections/%s?tenant=%s&database=%s",
-		c.baseURL, name, c.tenant, c.database)
+	url := fmt.Sprintf("%s/collections/%s", c.baseURL, name)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -196,8 +208,7 @@ func (c *ChromaDBClient) GetCollection(ctx context.Context, name string) (*Colle
 
 // DeleteCollection deletes a collection
 func (c *ChromaDBClient) DeleteCollection(ctx context.Context, name string) error {
-	url := fmt.Sprintf("%s/collections/%s?tenant=%s&database=%s",
-		c.baseURL, name, c.tenant, c.database)
+	url := fmt.Sprintf("%s/collections/%s", c.baseURL, name)
 
 	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
 	if err != nil {
@@ -220,8 +231,12 @@ func (c *ChromaDBClient) DeleteCollection(ctx context.Context, name string) erro
 
 // CountCollection returns the number of documents in a collection
 func (c *ChromaDBClient) CountCollection(ctx context.Context, name string) (int, error) {
-	url := fmt.Sprintf("%s/collections/%s/count?tenant=%s&database=%s",
-		c.baseURL, name, c.tenant, c.database)
+	collection, err := c.GetCollection(ctx, name)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get collection: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/collections/%s/count", c.baseURL, collection.ID)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -383,6 +398,68 @@ func (c *ChromaDBClient) DeleteDocuments(ctx context.Context, collectionName str
 	}
 
 	return nil
+}
+
+// GetDocuments retrieves documents from a collection with optional filtering
+func (c *ChromaDBClient) GetDocuments(ctx context.Context, collectionName string, where map[string]interface{}, limit int, offset int, includeEmbeddings bool) (*GetResponse, error) {
+	collection, err := c.GetCollection(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection: %w", err)
+	}
+
+	payload := map[string]interface{}{
+		"include": []string{"documents", "metadatas"},
+	}
+
+	if includeEmbeddings {
+		payload["include"] = []string{"documents", "metadatas", "embeddings"}
+	}
+
+	if where != nil && len(where) > 0 {
+		payload["where"] = where
+	}
+
+	if limit > 0 {
+		payload["limit"] = limit
+	} else {
+		// Default to fetching all documents (use a large limit)
+		payload["limit"] = 100000
+	}
+
+	if offset > 0 {
+		payload["offset"] = offset
+	}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/collections/%s/get", c.baseURL, collection.ID)
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("get documents failed (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	var getResp GetResponse
+	if err := json.NewDecoder(resp.Body).Decode(&getResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &getResp, nil
 }
 
 // Close closes the HTTP client connections

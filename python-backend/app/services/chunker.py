@@ -158,7 +158,7 @@ class DocumentChunker:
         chunk_size: int = 512,
         chunk_overlap: int = 50,
         include_metadata: bool = True,
-        extract_metadata: bool = False,
+        extract_metadata: bool = True,
         num_questions: int = 3,
         num_keywords: int = 5,
     ) -> ChunkedDocument:
@@ -438,6 +438,9 @@ class DocumentChunker:
         strategy: ChunkingStrategy = ChunkingStrategy.SENTENCE,
         chunk_size: int = 512,
         chunk_overlap: int = 50,
+        extract_metadata: bool = False,
+        num_questions: int = 3,
+        num_keywords: int = 5,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> List[TextChunk]:
         """
@@ -459,6 +462,9 @@ class DocumentChunker:
 
         splitter = self._get_splitter(strategy, chunk_size, chunk_overlap)
         nodes = splitter.get_nodes_from_documents([llama_doc])
+
+        if extract_metadata:
+            nodes = self._extract_metadata(nodes, num_questions, num_keywords)
 
         return self._nodes_to_chunks(nodes, doc_id)
 

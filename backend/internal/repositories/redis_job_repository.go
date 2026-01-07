@@ -96,6 +96,39 @@ func (r *RedisJobRepository) CreateJob(ctx context.Context, job *Job) error {
 }
 
 // GetJob retrieves a job by ID
+// UpdateJob updates an entire job in the repository
+func (r *RedisJobRepository) UpdateJob(ctx context.Context, job *Job) error {
+	if err := job.Validate(); err != nil {
+		return err
+	}
+
+	// Check if job exists
+	exists, err := r.jobExists(ctx, job.ID)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return JobNotFoundError(job.ID)
+	}
+
+	// Update timestamp
+	job.UpdatedAt = time.Now()
+
+	// Serialize job
+	jobJSON, err := json.Marshal(job)
+	if err != nil {
+		return NewJobRepositoryError("update_job", job.ID, err, "failed to marshal job")
+	}
+
+	// Save to Redis
+	jobKey := jobKeyPrefix + job.ID
+	if err := r.client.Set(ctx, jobKey, jobJSON, 0).Err(); err != nil {
+		return NewJobRepositoryError("update_job", job.ID, err, "failed to save job")
+	}
+
+	return nil
+}
+
 func (r *RedisJobRepository) GetJob(ctx context.Context, jobID string) (*Job, error) {
 	jobKey := jobKeyPrefix + jobID
 

@@ -11,6 +11,7 @@ type JobRepository interface {
 	// Job Management
 	CreateJob(ctx context.Context, job *Job) error
 	GetJob(ctx context.Context, jobID string) (*Job, error)
+	UpdateJob(ctx context.Context, job *Job) error
 	UpdateJobStatus(ctx context.Context, jobID string, status JobStatus, progress int, message string) error
 	UpdateJobResult(ctx context.Context, jobID string, result map[string]interface{}) error
 	DeleteJob(ctx context.Context, jobID string) error

@@ -17,13 +17,13 @@ const (
 	MICROSERVICE_BASE_URL = "http://localhost:8000"
 )
 
-type DocumentService struct {
+type LegacyDocumentService struct {
 	baseURL    string
 	httpClient *http.Client
 }
 
-func NewDocumentService() *DocumentService {
-	return &DocumentService{
+func NewLegacyDocumentService() *LegacyDocumentService {
+	return &LegacyDocumentService{
 		baseURL: MICROSERVICE_BASE_URL,
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second,
@@ -38,7 +38,7 @@ type ListDocumentsResponse struct {
 }
 
 // ListDocuments fetches all documents from the Python microservice
-func (s *DocumentService) ListDocuments(ctx context.Context) (*ListDocumentsResponse, error) {
+func (s *LegacyDocumentService) ListDocuments(ctx context.Context) (*ListDocumentsResponse, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL+"/documents/list", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -84,7 +84,7 @@ type VectorDocument struct {
 }
 
 // ListVectorDocuments fetches all documents from the vector store via Python microservice
-func (s *DocumentService) ListVectorDocuments(ctx context.Context, collectionName string) (*ListVectorDocumentsResponse, error) {
+func (s *LegacyDocumentService) ListVectorDocuments(ctx context.Context, collectionName string) (*ListVectorDocumentsResponse, error) {
 	url := s.baseURL + "/documents/vector"
 	if collectionName != "" {
 		url += "?collection_name=" + collectionName
@@ -119,7 +119,7 @@ func (s *DocumentService) ListVectorDocuments(ctx context.Context, collectionNam
 }
 
 // HealthCheck verifies the Python microservice is running
-func (s *DocumentService) HealthCheck(ctx context.Context) error {
+func (s *LegacyDocumentService) HealthCheck(ctx context.Context) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", s.baseURL+"/health", nil)
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ func (s *DocumentService) HealthCheck(ctx context.Context) error {
 }
 
 // UploadDocumentRequest contains options for document upload
-type UploadDocumentRequest struct {
+type LegacyUploadDocumentRequest struct {
 	ChunkingStrategy string
 	ChunkSize        int
 	ChunkOverlap     int
@@ -153,7 +153,7 @@ type UploadDocumentRequest struct {
 }
 
 // UploadDocumentResponse represents the response from document upload
-type UploadDocumentResponse struct {
+type LegacyUploadDocumentResponse struct {
 	DocumentID       string                 `json:"document_id"`
 	Filename         string                 `json:"filename"`
 	Status           string                 `json:"status"`
@@ -164,8 +164,8 @@ type UploadDocumentResponse struct {
 }
 
 // DefaultUploadRequest returns default upload options
-func DefaultUploadRequest() UploadDocumentRequest {
-	return UploadDocumentRequest{
+func DefaultLegacyUploadRequest() LegacyUploadDocumentRequest {
+	return LegacyUploadDocumentRequest{
 		ChunkingStrategy: "sentence",
 		ChunkSize:        512,
 		ChunkOverlap:     50,
@@ -180,7 +180,7 @@ func DefaultUploadRequest() UploadDocumentRequest {
 }
 
 // UploadDocument uploads a file to the Python microservice for processing
-func (s *DocumentService) UploadDocument(ctx context.Context, filename string, fileContent io.Reader, opts UploadDocumentRequest) (*UploadDocumentResponse, error) {
+func (s *LegacyDocumentService) UploadDocument(ctx context.Context, filename string, fileContent io.Reader, opts LegacyUploadDocumentRequest) (*LegacyUploadDocumentResponse, error) {
 	// Create multipart form
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
@@ -233,7 +233,7 @@ func (s *DocumentService) UploadDocument(ctx context.Context, filename string, f
 		return nil, fmt.Errorf("Python backend returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var response UploadDocumentResponse
+	var response LegacyUploadDocumentResponse
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
@@ -248,8 +248,8 @@ type DocumentChunk struct {
 	Metadata map[string]interface{} `json:"metadata"`
 }
 
-// GetDocumentChunksResponse represents the response from the chunks endpoint
-type GetDocumentChunksResponse struct {
+// LegacyGetDocumentChunksResponse represents the response from the chunks endpoint
+type LegacyGetDocumentChunksResponse struct {
 	Chunks []DocumentChunk `json:"chunks"`
 	Count  int             `json:"count"`
 	Limit  int             `json:"limit"`
@@ -257,7 +257,7 @@ type GetDocumentChunksResponse struct {
 }
 
 // GetDocumentChunks fetches chunks for a specific document from the vector store
-func (s *DocumentService) GetDocumentChunks(ctx context.Context, documentID string, collectionName string, limit int, offset int) (*GetDocumentChunksResponse, error) {
+func (s *LegacyDocumentService) GetDocumentChunks(ctx context.Context, documentID string, collectionName string, limit int, offset int) (*LegacyGetDocumentChunksResponse, error) {
 	// Build URL with query parameters
 	url := fmt.Sprintf("%s/documents/chunks?document_id=%s", s.baseURL, documentID)
 	if collectionName != "" {
@@ -290,7 +290,7 @@ func (s *DocumentService) GetDocumentChunks(ctx context.Context, documentID stri
 		return nil, fmt.Errorf("Python backend returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var response GetDocumentChunksResponse
+	var response LegacyGetDocumentChunksResponse
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
@@ -307,7 +307,7 @@ type DeleteDocumentResponse struct {
 }
 
 // DeleteDocument deletes a document from both vector store and Redis
-func (s *DocumentService) DeleteDocument(ctx context.Context, documentID string, collectionName string) (*DeleteDocumentResponse, error) {
+func (s *LegacyDocumentService) DeleteDocument(ctx context.Context, documentID string, collectionName string) (*DeleteDocumentResponse, error) {
 	url := fmt.Sprintf("%s/documents/%s", s.baseURL, documentID)
 	if collectionName != "" {
 		url += "?collection_name=" + collectionName
@@ -342,7 +342,7 @@ func (s *DocumentService) DeleteDocument(ctx context.Context, documentID string,
 }
 
 // DeleteCollectionResponse represents the response from deleting a collection
-type DeleteCollectionResponse struct {
+type LegacyDeleteCollectionResponse struct {
 	Success                      bool   `json:"success"`
 	CollectionName               string `json:"collection_name"`
 	DocumentsRemovedFromRegistry int    `json:"documents_removed_from_registry"`
@@ -350,7 +350,7 @@ type DeleteCollectionResponse struct {
 }
 
 // DeleteCollection deletes an entire collection from vector store and cleans up Redis
-func (s *DocumentService) DeleteCollection(ctx context.Context, collectionName string) (*DeleteCollectionResponse, error) {
+func (s *LegacyDocumentService) DeleteCollection(ctx context.Context, collectionName string) (*LegacyDeleteCollectionResponse, error) {
 	url := fmt.Sprintf("%s/documents/collection/%s", s.baseURL, collectionName)
 
 	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
@@ -373,7 +373,7 @@ func (s *DocumentService) DeleteCollection(ctx context.Context, collectionName s
 		return nil, fmt.Errorf("Python backend returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var response DeleteCollectionResponse
+	var response LegacyDeleteCollectionResponse
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}

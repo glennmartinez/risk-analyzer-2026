@@ -19,8 +19,8 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
-from ..config import Settings, get_settings
-from ..models import (
+from ...config import Settings, get_settings
+from ...models import (
     ChunkedDocument,
     ChunkingStrategy,
     ErrorResponse,
@@ -28,7 +28,7 @@ from ..models import (
     ProcessingRequest,
     ProcessingResponse,
 )
-from ..services import (
+from ...services import (
     DocumentChunker,
     DocumentParser,
     DocumentRegistry,
@@ -449,6 +449,7 @@ async def list_documents(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @router.get(
     "/chunks",
     summary="Get all chunks from the vector store",
@@ -475,7 +476,6 @@ async def get_chunks(
     except Exception as e:
         logger.exception(f"Error getting chunks: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get(
     "/vector",

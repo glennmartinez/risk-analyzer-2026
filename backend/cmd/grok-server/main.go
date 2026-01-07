@@ -21,11 +21,27 @@ package main
 
 import (
 	"log"
+	"os"
+	"path/filepath"
+
 	_ "risk-analyzer/docs" // This imports the docs package to initialize swagger
 	"risk-analyzer/internal/server"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file if it exists (from project root)
+	envPath := filepath.Join("..", ".env")
+	if err := godotenv.Load(envPath); err != nil {
+		// .env file is optional - only log if in development
+		if os.Getenv("GO_ENV") != "production" {
+			log.Printf("Note: No .env file found at %s (this is optional)", envPath)
+		}
+	} else {
+		log.Println("Loaded environment variables from .env file")
+	}
+
 	log.Println("Starting Grok Server...")
 	srv := server.NewServer()
 	if err := srv.ListenAndServe(); err != nil {

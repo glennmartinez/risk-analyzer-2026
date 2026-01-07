@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"risk-analyzer/internal/repositories"
@@ -23,7 +24,7 @@ type UploadWorker struct {
 // PythonClient defines the interface for calling Python backend
 type PythonClient interface {
 	ParseDocument(ctx context.Context, filename string, extractMetadata bool, numQuestions int, maxPages int) (ParseResult, error)
-	ChunkText(ctx context.Context, text string, strategy string, chunkSize int, chunkOverlap int) (ChunkResult, error)
+	ChunkText(ctx context.Context, text string, strategy string, chunkSize int, chunkOverlap int, extractMetadata bool, numQuestions int) (ChunkResult, error)
 	GenerateEmbeddings(ctx context.Context, texts []string) (EmbeddingResult, error)
 }
 
@@ -43,7 +44,8 @@ type ParseResult struct {
 
 // ChunkResult represents the result of text chunking
 type ChunkResult struct {
-	Chunks []string `json:"chunks"`
+	Chunks   []string                 `json:"chunks"`
+	Metadata []map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // EmbeddingResult represents the result of embedding generation
@@ -189,9 +191,24 @@ func (w *UploadWorker) processJobInternal(ctx context.Context, job *repositories
 		return fmt.Errorf("invalid job payload: %w", err)
 	}
 
+	// Validate file_path exists (permanently fail old jobs without it)
+	if payload.FilePath == "" {
+		w.logger.Error("Job missing file_path - permanently failing old job: %s", job.ID)
+		// Mark job as failed permanently (no retry)
+		_ = w.jobRepo.UpdateJobStatus(ctx, job.ID, repositories.JobStatusFailed, 100, "Job missing file_path - created before async file saving was implemented")
+		// Remove from queue so it doesn't retry
+		_ = w.jobRepo.DeleteJob(ctx, job.ID)
+		return &WorkerError{
+			WorkerName: w.Name(),
+			Operation:  "process_job",
+			Err:        fmt.Errorf("job missing file_path field - cannot process"),
+			Message:    "Old job format - permanently failed",
+		}
+	}
+
 	// Create document record
 	doc := &repositories.Document{
-		ID:               payload.DocumentID(),
+		ID:               payload.DocumentID,
 		Filename:         payload.Filename,
 		Collection:       payload.Collection,
 		Status:           repositories.DocumentStatusProcessing,
@@ -204,18 +221,35 @@ func (w *UploadWorker) processJobInternal(ctx context.Context, job *repositories
 		MaxPages:         payload.MaxPages,
 	}
 
-	// Register document
+	// Register document (skip if already exists - allow reprocessing)
 	if err := w.documentRepo.Register(ctx, doc); err != nil {
-		return fmt.Errorf("failed to register document: %w", err)
+		// Check if document already exists
+		if existingDoc, getErr := w.documentRepo.Get(ctx, payload.DocumentID); getErr == nil && existingDoc != nil {
+			w.logger.Info("Document already exists, updating status to processing: %s", payload.DocumentID)
+			// Update existing document to processing status
+			updates := map[string]interface{}{
+				"status": repositories.DocumentStatusProcessing,
+			}
+			if updateErr := w.documentRepo.Update(ctx, payload.DocumentID, updates); updateErr != nil {
+				w.logger.Warn("Failed to update existing document status: %v", updateErr)
+			}
+		} else {
+			return fmt.Errorf("failed to register document: %w", err)
+		}
 	}
 
-	// Update progress: Parsing document
-	w.updateProgress(ctx, job.ID, 10, "Parsing document")
+	// Update progress: Starting document processing
+	w.updateProgress(ctx, job.ID, 5, "Starting document processing")
 
-	// Step 1: Parse document
+	// Debug: Log payload values
+	w.logger.Info("DEBUG Payload - extract_metadata=%v, num_questions=%d, max_pages=%d, chunking_strategy=%s",
+		payload.ExtractMetadata, payload.NumQuestions, payload.MaxPages, payload.ChunkingStrategy)
+
+	// Step 1: Parse document (pass file path so adapter can read it)
+	w.updateProgress(ctx, job.ID, 10, "Parsing document with Docling...")
 	parseResult, err := w.pythonClient.ParseDocument(
 		ctx,
-		payload.Filename,
+		payload.FilePath,
 		payload.ExtractMetadata,
 		payload.NumQuestions,
 		payload.MaxPages,
@@ -223,17 +257,26 @@ func (w *UploadWorker) processJobInternal(ctx context.Context, job *repositories
 	if err != nil {
 		return fmt.Errorf("failed to parse document: %w", err)
 	}
-
-	// Update progress: Chunking text
-	w.updateProgress(ctx, job.ID, 30, "Chunking text")
+	w.updateProgress(ctx, job.ID, 20, fmt.Sprintf("Document parsed: %d characters extracted", len(parseResult.Text)))
 
 	// Step 2: Chunk text
+	w.logger.Info("DEBUG ChunkText - strategy=%s, size=%d, overlap=%d, extract_metadata=%v, num_questions=%d",
+		payload.ChunkingStrategy, payload.ChunkSize, payload.ChunkOverlap, payload.ExtractMetadata, payload.NumQuestions)
+
+	if payload.ExtractMetadata {
+		w.updateProgress(ctx, job.ID, 25, "Chunking text and extracting metadata via LLM (this may take a while)...")
+	} else {
+		w.updateProgress(ctx, job.ID, 25, "Chunking text...")
+	}
+
 	chunkResult, err := w.pythonClient.ChunkText(
 		ctx,
 		parseResult.Text,
 		payload.ChunkingStrategy,
 		payload.ChunkSize,
 		payload.ChunkOverlap,
+		payload.ExtractMetadata,
+		payload.NumQuestions,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to chunk text: %w", err)
@@ -243,37 +286,44 @@ func (w *UploadWorker) processJobInternal(ctx context.Context, job *repositories
 		return fmt.Errorf("no chunks generated from document")
 	}
 
-	// Update progress: Generating embeddings
-	w.updateProgress(ctx, job.ID, 50, fmt.Sprintf("Generating embeddings for %d chunks", len(chunkResult.Chunks)))
+	w.updateProgress(ctx, job.ID, 50, fmt.Sprintf("Created %d chunks, generating embeddings...", len(chunkResult.Chunks)))
 
 	// Step 3: Generate embeddings
 	embeddingResult, err := w.pythonClient.GenerateEmbeddings(ctx, chunkResult.Chunks)
 	if err != nil {
 		return fmt.Errorf("failed to generate embeddings: %w", err)
 	}
+	w.updateProgress(ctx, job.ID, 70, fmt.Sprintf("Generated %d embeddings, storing in vector database...", len(embeddingResult.Embeddings)))
 
 	if len(embeddingResult.Embeddings) != len(chunkResult.Chunks) {
 		return fmt.Errorf("embedding count mismatch: got %d, expected %d", len(embeddingResult.Embeddings), len(chunkResult.Chunks))
 	}
 
-	// Update progress: Storing in vector database
-	w.updateProgress(ctx, job.ID, 70, "Storing chunks in vector database")
-
 	// Step 4: Store in vector database
 	chunks := make([]*repositories.Chunk, len(chunkResult.Chunks))
 	for i := range chunkResult.Chunks {
+		// Build metadata including extracted metadata if available
+		chunkMeta := map[string]interface{}{
+			"document_id":  doc.ID,
+			"filename":     doc.Filename,
+			"chunk_index":  i,
+			"total_chunks": len(chunkResult.Chunks),
+		}
+
+		// Merge extracted metadata (title, keywords, questions) if available
+		if i < len(chunkResult.Metadata) && chunkResult.Metadata[i] != nil {
+			for k, v := range chunkResult.Metadata[i] {
+				chunkMeta[k] = v
+			}
+		}
+
 		chunks[i] = &repositories.Chunk{
 			ID:         fmt.Sprintf("%s-chunk-%d", doc.ID, i),
 			DocumentID: doc.ID,
 			Text:       chunkResult.Chunks[i],
 			Embedding:  embeddingResult.Embeddings[i],
 			ChunkIndex: i,
-			Metadata: map[string]interface{}{
-				"document_id":  doc.ID,
-				"filename":     doc.Filename,
-				"chunk_index":  i,
-				"total_chunks": len(chunkResult.Chunks),
-			},
+			Metadata:   chunkMeta,
 		}
 	}
 
@@ -282,10 +332,15 @@ func (w *UploadWorker) processJobInternal(ctx context.Context, job *repositories
 		return fmt.Errorf("failed to store chunks in vector database: %w", err)
 	}
 
-	// Update progress: Finalizing
-	w.updateProgress(ctx, job.ID, 90, "Finalizing document")
+	w.updateProgress(ctx, job.ID, 85, fmt.Sprintf("Stored %d chunks in collection '%s'", len(chunks), payload.Collection))
+
+	// Clean up uploaded file after successful storage
+	if err := os.Remove(payload.FilePath); err != nil {
+		w.logger.Warn("Failed to remove uploaded file %s: %v", payload.FilePath, err)
+	}
 
 	// Step 5: Update document record
+	w.updateProgress(ctx, job.ID, 90, "Finalizing document record...")
 	updates := map[string]interface{}{
 		"chunk_count":         len(chunks),
 		"status":              repositories.DocumentStatusCompleted,
@@ -331,52 +386,54 @@ func (w *UploadWorker) handleJobSuccess(ctx context.Context, job *repositories.J
 func (w *UploadWorker) handleJobFailure(ctx context.Context, job *repositories.Job, jobErr error, startTime time.Time) {
 	w.recordJobFailure(startTime)
 
-	// Update job error
-	job.Error = jobErr.Error()
-	job.RetryCount++
+	// Get fresh job from DB to get current retry count
+	freshJob, err := w.jobRepo.GetJob(ctx, job.ID)
+	if err != nil {
+		w.logger.Error("Failed to get job for retry check: %v", err)
+		return
+	}
+
+	// Increment retry count
+	freshJob.RetryCount++
+	freshJob.Error = jobErr.Error()
+
+	// Save the updated retry count using UpdateJob
+	if err := w.jobRepo.UpdateJob(ctx, freshJob); err != nil {
+		w.logger.Error("Failed to update job with retry count: %v", err)
+		return
+	}
 
 	// Check if we should retry
-	if job.RetryCount < job.MaxRetries {
+	if freshJob.RetryCount <= freshJob.MaxRetries {
 		// Retry
-		w.logger.Warn("Job failed, will retry (%d/%d): %s - %v", job.RetryCount, job.MaxRetries, job.ID, jobErr)
+		w.logger.Warn("Job failed, will retry (%d/%d): %s - %v", freshJob.RetryCount, freshJob.MaxRetries, freshJob.ID, jobErr)
 
-		err := w.jobRepo.UpdateJobStatus(
-			ctx,
-			job.ID,
-			repositories.JobStatusRetrying,
-			0,
-			fmt.Sprintf("Failed: %v. Retry %d/%d", jobErr, job.RetryCount, job.MaxRetries),
-		)
-		if err != nil {
-			w.logger.Error("Failed to update job status to retrying: %v", err)
-		}
+		freshJob.Status = repositories.JobStatusQueued
+		freshJob.Message = fmt.Sprintf("Failed: %v. Retry %d/%d", jobErr, freshJob.RetryCount, freshJob.MaxRetries)
 
 		// Re-enqueue after delay
 		time.Sleep(w.config.RetryDelay)
-		if err := w.jobRepo.EnqueueJob(ctx, job); err != nil {
+		if err := w.jobRepo.EnqueueJob(ctx, freshJob); err != nil {
 			w.logger.Error("Failed to re-enqueue job: %v", err)
 		}
 	} else {
-		// Exceeded max retries
-		w.logger.Error("Job failed permanently: %s - %v", job.ID, jobErr)
+		// Exceeded max retries - permanently failed
+		w.logger.Error("Job failed permanently after %d retries: %s - %v", freshJob.MaxRetries, freshJob.ID, jobErr)
 
-		err := w.jobRepo.UpdateJobStatus(
-			ctx,
-			job.ID,
-			repositories.JobStatusFailed,
-			0,
-			fmt.Sprintf("Failed after %d retries: %v", job.MaxRetries, jobErr),
-		)
-		if err != nil {
-			w.logger.Error("Failed to update job status to failed: %v", err)
+		freshJob.Status = repositories.JobStatusFailed
+		freshJob.Message = fmt.Sprintf("Failed permanently after %d retries: %v", freshJob.MaxRetries, jobErr)
+
+		// Save final state
+		if err := w.jobRepo.UpdateJob(ctx, freshJob); err != nil {
+			w.logger.Error("Failed to update job to failed status: %v", err)
 		}
 
 		// Update document status to failed
-		if payload, err := w.parsePayload(job.Payload); err == nil {
+		if payload, err := w.parsePayload(freshJob.Payload); err == nil {
 			docUpdates := map[string]interface{}{
 				"status": repositories.DocumentStatusFailed,
 			}
-			if err := w.documentRepo.Update(ctx, payload.DocumentID(), docUpdates); err != nil {
+			if err := w.documentRepo.Update(ctx, payload.DocumentID, docUpdates); err != nil {
 				w.logger.Error("Failed to update document status: %v", err)
 			}
 		}
@@ -409,7 +466,9 @@ func (w *UploadWorker) parsePayload(payload map[string]interface{}) (*UploadJobP
 
 // UploadJobPayload represents the payload for document upload jobs
 type UploadJobPayload struct {
+	DocumentID       string `json:"document_id"`
 	Filename         string `json:"filename"`
+	FilePath         string `json:"file_path"`
 	FileSize         int64  `json:"file_size"`
 	Collection       string `json:"collection"`
 	ChunkingStrategy string `json:"chunking_strategy"`
@@ -418,27 +477,6 @@ type UploadJobPayload struct {
 	ExtractMetadata  bool   `json:"extract_metadata"`
 	NumQuestions     int    `json:"num_questions"`
 	MaxPages         int    `json:"max_pages"`
-}
-
-// DocumentID generates a document ID from the payload
-func (p *UploadJobPayload) DocumentID() string {
-	// Generate a unique document ID based on filename and timestamp
-	// In production, you might want to use a UUID or hash
-	return fmt.Sprintf("doc-%s-%d", sanitizeFilename(p.Filename), time.Now().UnixNano())
-}
-
-// sanitizeFilename removes special characters from filename
-func sanitizeFilename(filename string) string {
-	// Simple sanitization - replace non-alphanumeric with dash
-	result := ""
-	for _, c := range filename {
-		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') {
-			result += string(c)
-		} else {
-			result += "-"
-		}
-	}
-	return result
 }
 
 // DefaultLogger is a simple logger implementation

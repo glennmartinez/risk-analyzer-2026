@@ -21,6 +21,7 @@ type VectorRepository interface {
 	DeleteDocument(ctx context.Context, collectionName string, documentID string) (int, error)
 	DeleteChunks(ctx context.Context, collectionName string, chunkIDs []string) error
 	GetChunk(ctx context.Context, collectionName string, chunkID string) (*Chunk, error)
+	GetDocumentChunks(ctx context.Context, collectionName string, documentID string, limit int, offset int) ([]*Chunk, int, error)
 	ListDocuments(ctx context.Context, collectionName string) ([]*VectorDocument, error)
 	CountDocuments(ctx context.Context, collectionName string) (int, error)
 

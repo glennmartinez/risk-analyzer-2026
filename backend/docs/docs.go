@@ -47,9 +47,33 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/ms/documents/chunks": {
+        "/api/v1/collections": {
             "get": {
-                "description": "Get all chunks for a specific document from the vector store",
+                "description": "Get a list of all collections",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "collections"
+                ],
+                "summary": "List collections",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CollectionsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new vector collection",
                 "consumes": [
                     "application/json"
                 ],
@@ -57,34 +81,410 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "microservice-documents"
+                    "collections"
                 ],
-                "summary": "Get chunks for a document",
+                "summary": "Create collection",
+                "parameters": [
+                    {
+                        "description": "Collection request",
+                        "name": "collection",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/services.CreateCollectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/collections/{name}": {
+            "get": {
+                "description": "Get detailed information about a collection",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "collections"
+                ],
+                "summary": "Get collection",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Document ID",
-                        "name": "document_id",
-                        "in": "query",
+                        "description": "Collection name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.CollectionInfo"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a collection and all its documents",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "collections"
+                ],
+                "summary": "Delete collection",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SuccessResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/collections/{name}/stats": {
+            "get": {
+                "description": "Get detailed statistics for a collection",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "collections"
+                ],
+                "summary": "Get collection statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SuccessResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/documents": {
+            "get": {
+                "description": "Get a list of all documents",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "List documents",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.DocumentListResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/documents/upload": {
+            "post": {
+                "description": "Upload and process a document for vector storage",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Upload a document",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Document file",
+                        "name": "file",
+                        "in": "formData",
                         "required": true
                     },
                     {
                         "type": "string",
                         "description": "Collection name",
-                        "name": "collection_name",
+                        "name": "collection",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "semantic",
+                        "description": "Chunking strategy",
+                        "name": "chunking_strategy",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 512,
+                        "description": "Chunk size",
+                        "name": "chunk_size",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Chunk overlap",
+                        "name": "chunk_overlap",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Extract metadata",
+                        "name": "extract_metadata",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "Number of questions",
+                        "name": "num_questions",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Max pages to process",
+                        "name": "max_pages",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Process asynchronously",
+                        "name": "async",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.UploadDocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/documents/{id}": {
+            "get": {
+                "description": "Get document by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Get document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Document ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/repositories.Document"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a document and all its chunks",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Delete document",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Document ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SuccessResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/documents/{id}/chunks": {
+            "get": {
+                "description": "Get all chunks for a specific document from the vector store",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Get document chunks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Document ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Collection name (optional, will use document's collection if not provided)",
+                        "name": "collection",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "default": 100,
-                        "description": "Maximum number of chunks",
+                        "description": "Limit results",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "integer",
                         "default": 0,
-                        "description": "Number of chunks to skip",
+                        "description": "Offset for pagination",
                         "name": "offset",
                         "in": "query"
                     }
@@ -99,325 +499,102 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     }
                 }
             }
         },
-        "/api/ms/documents/collection/{collection_name}": {
-            "delete": {
-                "description": "Delete an entire collection from vector store and clean up Redis registry",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "microservice-documents"
-                ],
-                "summary": "Delete a collection",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Collection name",
-                        "name": "collection_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/services.DeleteCollectionResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/ms/documents/health": {
+        "/api/v1/documents/{id}/status": {
             "get": {
-                "description": "Verify the Python document microservice is running",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Get the processing status of a document",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "microservice-documents"
+                    "documents"
                 ],
-                "summary": "Check Python microservice health",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/ms/documents/list": {
-            "get": {
-                "description": "Get a list of all documents registered in the Redis registry via Python microservice",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "microservice-documents"
-                ],
-                "summary": "List all registered documents",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/services.ListDocumentsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/ms/documents/upload": {
-            "post": {
-                "description": "Upload a PDF or document file to be parsed, chunked, and optionally stored in vector DB",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "microservice-documents"
-                ],
-                "summary": "Upload and process a document",
-                "parameters": [
-                    {
-                        "type": "file",
-                        "description": "Document file to upload",
-                        "name": "file",
-                        "in": "formData",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "default": "sentence",
-                        "description": "Chunking strategy (sentence, semantic, markdown, hierarchical)",
-                        "name": "chunking_strategy",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 512,
-                        "description": "Target chunk size in tokens",
-                        "name": "chunk_size",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 50,
-                        "description": "Overlap between chunks",
-                        "name": "chunk_overlap",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Store chunks in vector database",
-                        "name": "store_in_vector_db",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Extract tables from document",
-                        "name": "extract_tables",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "boolean",
-                        "default": true,
-                        "description": "Extract figures from document",
-                        "name": "extract_figures",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Extract metadata via LLM (title, questions, keywords)",
-                        "name": "extract_metadata",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 3,
-                        "description": "Number of questions to generate per chunk",
-                        "name": "num_questions",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 30,
-                        "description": "Maximum number of pages to process",
-                        "name": "max_pages",
-                        "in": "formData"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Vector DB collection name",
-                        "name": "collection_name",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/services.UploadDocumentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/ms/documents/vector": {
-            "get": {
-                "description": "Get a list of all unique documents stored in the vector database via Python microservice",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "microservice-documents"
-                ],
-                "summary": "List all documents in vector store",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Collection name",
-                        "name": "collection_name",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/services.ListVectorDocumentsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/ms/documents/{document_id}": {
-            "delete": {
-                "description": "Delete a document from both vector store and Redis registry",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "microservice-documents"
-                ],
-                "summary": "Delete a document",
+                "summary": "Get document status",
                 "parameters": [
                     {
                         "type": "string",
                         "description": "Document ID",
-                        "name": "document_id",
+                        "name": "id",
                         "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.StatusResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/search": {
+            "get": {
+                "description": "Perform a simple search using query parameters",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "Simple search",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query",
+                        "name": "q",
+                        "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
                         "description": "Collection name",
-                        "name": "collection_name",
+                        "name": "collection",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of results",
+                        "name": "top_k",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Use cache",
+                        "name": "use_cache",
                         "in": "query"
                     }
                 ],
@@ -425,25 +602,63 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/services.DeleteDocumentResponse"
+                            "$ref": "#/definitions/services.SearchResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Perform vector similarity search across documents",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "search"
+                ],
+                "summary": "Search documents",
+                "parameters": [
+                    {
+                        "description": "Search request",
+                        "name": "query",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SearchRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.SearchResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     }
                 }
@@ -543,7 +758,7 @@ const docTemplate = `{
         },
         "/documents/chunks": {
             "get": {
-                "description": "Get chunks from the vector store with pagination",
+                "description": "DEPRECATED: Legacy endpoint. Get chunks from the vector store with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -551,9 +766,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "documents"
+                    "deprecated"
                 ],
-                "summary": "Get document chunks",
+                "summary": "[DEPRECATED] Get document chunks",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -596,7 +812,7 @@ const docTemplate = `{
         },
         "/documents/collection-stats": {
             "get": {
-                "description": "Get statistics about the vector store collection",
+                "description": "DEPRECATED: Use /api/v1/collections/{name}/stats instead. Get statistics about the vector store collection",
                 "consumes": [
                     "application/json"
                 ],
@@ -604,9 +820,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "documents"
+                    "deprecated"
                 ],
-                "summary": "Get collection statistics",
+                "summary": "[DEPRECATED] Get collection statistics",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -629,7 +846,7 @@ const docTemplate = `{
         },
         "/documents/list": {
             "get": {
-                "description": "Get a list of all documents stored in the vector database",
+                "description": "DEPRECATED: Use /api/v1/documents instead. Get a list of all documents stored in the vector database",
                 "consumes": [
                     "application/json"
                 ],
@@ -637,9 +854,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "documents"
+                    "deprecated"
                 ],
-                "summary": "List all documents",
+                "summary": "[DEPRECATED] List all documents",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -662,7 +880,7 @@ const docTemplate = `{
         },
         "/documents/process-example": {
             "post": {
-                "description": "Process the bundled example PDF through the full pipeline",
+                "description": "DEPRECATED: Legacy endpoint. Process the bundled example PDF through the full pipeline",
                 "consumes": [
                     "application/json"
                 ],
@@ -670,9 +888,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "documents"
+                    "deprecated"
                 ],
-                "summary": "Process example PDF",
+                "summary": "[DEPRECATED] Process example PDF",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -723,7 +942,7 @@ const docTemplate = `{
         },
         "/documents/upload": {
             "post": {
-                "description": "Upload a PDF or document file and process it",
+                "description": "DEPRECATED: Use /api/v1/documents/upload instead. Upload a PDF or document file and process it",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -731,9 +950,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "documents"
+                    "deprecated"
                 ],
-                "summary": "Upload and process document",
+                "summary": "[DEPRECATED] Upload and process document",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "file",
@@ -942,7 +1162,7 @@ const docTemplate = `{
         },
         "/search": {
             "get": {
-                "description": "Search for similar chunks in the vector store",
+                "description": "DEPRECATED: Use /api/v1/search instead. Search for similar chunks in the vector store",
                 "consumes": [
                     "application/json"
                 ],
@@ -950,9 +1170,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "search"
+                    "deprecated"
                 ],
-                "summary": "Search documents",
+                "summary": "[DEPRECATED] Search documents",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -989,7 +1210,7 @@ const docTemplate = `{
         },
         "/search/collections": {
             "get": {
-                "description": "Get all vector store collections",
+                "description": "DEPRECATED: Use /api/v1/collections instead. Get all vector store collections",
                 "consumes": [
                     "application/json"
                 ],
@@ -997,9 +1218,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "search"
+                    "deprecated"
                 ],
-                "summary": "List search collections",
+                "summary": "[DEPRECATED] List search collections",
+                "deprecated": true,
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1013,7 +1235,7 @@ const docTemplate = `{
         },
         "/search/collections/{collection_name}": {
             "delete": {
-                "description": "Delete and recreate a search collection",
+                "description": "DEPRECATED: Use /api/v1/collections/{name} DELETE instead. Delete and reset a collection",
                 "consumes": [
                     "application/json"
                 ],
@@ -1021,9 +1243,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "search"
+                    "deprecated"
                 ],
-                "summary": "Reset collection",
+                "summary": "[DEPRECATED] Reset collection",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -1046,7 +1269,7 @@ const docTemplate = `{
         },
         "/search/collections/{collection_name}/stats": {
             "get": {
-                "description": "Get statistics for a specific search collection",
+                "description": "DEPRECATED: Use /api/v1/collections/{name}/stats instead. Get statistics for a specific collection",
                 "consumes": [
                     "application/json"
                 ],
@@ -1054,9 +1277,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "search"
+                    "deprecated"
                 ],
-                "summary": "Get collection statistics",
+                "summary": "[DEPRECATED] Get collection statistics",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -1079,7 +1303,7 @@ const docTemplate = `{
         },
         "/search/query": {
             "get": {
-                "description": "Perform a quick search across document chunks",
+                "description": "DEPRECATED: Use /api/v1/search instead. Perform a quick search across documents",
                 "consumes": [
                     "application/json"
                 ],
@@ -1087,9 +1311,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "search"
+                    "deprecated"
                 ],
-                "summary": "Quick search documents",
+                "summary": "[DEPRECATED] Quick search documents",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -1131,6 +1356,43 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handlers.CollectionsResponse": {
+            "type": "object",
+            "properties": {
+                "collections": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.DocumentListResponse": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "documents": {}
+            }
+        },
+        "handlers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                }
+            }
+        },
         "handlers.IssueWithKeywords": {
             "type": "object",
             "properties": {
@@ -1157,6 +1419,52 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.SearchRequestBody": {
+            "type": "object",
+            "properties": {
+                "collection": {
+                    "type": "string"
+                },
+                "filter": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "min_score": {
+                    "type": "number"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "top_k": {
+                    "type": "integer"
+                },
+                "use_cache": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "handlers.StatusResponse": {
+            "type": "object",
+            "properties": {
+                "document_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1235,53 +1543,6 @@ const docTemplate = `{
                 "ACLOS",
                 "China"
             ]
-        },
-        "models.Document": {
-            "type": "object",
-            "properties": {
-                "chunk_count": {
-                    "type": "integer"
-                },
-                "chunk_overlap": {
-                    "type": "integer"
-                },
-                "chunk_size": {
-                    "type": "integer"
-                },
-                "chunking_strategy": {
-                    "type": "string"
-                },
-                "collection": {
-                    "type": "string"
-                },
-                "document_id": {
-                    "type": "string"
-                },
-                "extract_metadata": {
-                    "type": "boolean"
-                },
-                "file_size": {
-                    "type": "integer"
-                },
-                "filename": {
-                    "type": "string"
-                },
-                "llm_model": {
-                    "type": "string"
-                },
-                "llm_provider": {
-                    "type": "string"
-                },
-                "max_pages": {
-                    "type": "integer"
-                },
-                "num_questions": {
-                    "type": "integer"
-                },
-                "registered_at": {
-                    "type": "string"
-                }
-            }
         },
         "models.Issue": {
             "type": "object",
@@ -1376,43 +1637,21 @@ const docTemplate = `{
                 }
             }
         },
-        "services.DeleteCollectionResponse": {
+        "repositories.Chunk": {
             "type": "object",
             "properties": {
-                "collection_name": {
-                    "type": "string"
-                },
-                "documents_removed_from_registry": {
+                "chunk_index": {
                     "type": "integer"
-                },
-                "success": {
-                    "type": "boolean"
-                },
-                "total_documents": {
-                    "type": "integer"
-                }
-            }
-        },
-        "services.DeleteDocumentResponse": {
-            "type": "object",
-            "properties": {
-                "deleted_chunks": {
-                    "type": "integer"
-                },
-                "deleted_from_registry": {
-                    "type": "boolean"
                 },
                 "document_id": {
                     "type": "string"
                 },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "services.DocumentChunk": {
-            "type": "object",
-            "properties": {
+                "embedding": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
                 "id": {
                     "type": "string"
                 },
@@ -1420,7 +1659,122 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": true
                 },
+                "page_number": {
+                    "type": "integer"
+                },
                 "text": {
+                    "type": "string"
+                },
+                "token_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "repositories.Document": {
+            "type": "object",
+            "properties": {
+                "chunk_count": {
+                    "type": "integer"
+                },
+                "chunk_overlap": {
+                    "type": "integer"
+                },
+                "chunk_size": {
+                    "type": "integer"
+                },
+                "chunking_strategy": {
+                    "description": "Processing metadata",
+                    "type": "string"
+                },
+                "collection": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
+                },
+                "extract_metadata": {
+                    "type": "boolean"
+                },
+                "file_size": {
+                    "type": "integer"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "llm_model": {
+                    "type": "string"
+                },
+                "llm_provider": {
+                    "description": "LLM metadata",
+                    "type": "string"
+                },
+                "max_pages": {
+                    "type": "integer"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "num_questions": {
+                    "type": "integer"
+                },
+                "status": {
+                    "$ref": "#/definitions/repositories.DocumentStatus"
+                },
+                "stored_in_vector_db": {
+                    "type": "boolean"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "repositories.DocumentStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "processing",
+                "completed",
+                "failed",
+                "deleted"
+            ],
+            "x-enum-varnames": [
+                "DocumentStatusPending",
+                "DocumentStatusProcessing",
+                "DocumentStatusCompleted",
+                "DocumentStatusFailed",
+                "DocumentStatusDeleted"
+            ]
+        },
+        "services.CollectionInfo": {
+            "type": "object",
+            "properties": {
+                "chunk_count": {
+                    "type": "integer"
+                },
+                "document_count": {
+                    "type": "integer"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.CreateCollectionRequest": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -1431,16 +1785,22 @@ const docTemplate = `{
                 "chunks": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/services.DocumentChunk"
+                        "$ref": "#/definitions/repositories.Chunk"
                     }
                 },
-                "count": {
-                    "type": "integer"
+                "collection": {
+                    "type": "string"
+                },
+                "document_id": {
+                    "type": "string"
                 },
                 "limit": {
                     "type": "integer"
                 },
                 "offset": {
+                    "type": "integer"
+                },
+                "total_count": {
                     "type": "integer"
                 }
             }
@@ -1462,65 +1822,63 @@ const docTemplate = `{
                 }
             }
         },
-        "services.ListDocumentsResponse": {
-            "type": "object",
-            "properties": {
-                "documents": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Document"
-                    }
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
-        "services.ListVectorDocumentsResponse": {
+        "services.SearchResponse": {
             "type": "object",
             "properties": {
                 "collection": {
                     "type": "string"
                 },
-                "documents": {
+                "embedding_time_ms": {
+                    "type": "number"
+                },
+                "from_cache": {
+                    "type": "boolean"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "results": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/services.VectorDocument"
+                        "$ref": "#/definitions/services.SearchResult"
                     }
                 },
-                "total": {
+                "search_time_ms": {
+                    "type": "number"
+                },
+                "total_results": {
                     "type": "integer"
                 }
             }
         },
-        "services.UploadDocumentResponse": {
+        "services.SearchResult": {
             "type": "object",
             "properties": {
+                "chunk_id": {
+                    "type": "string"
+                },
+                "distance": {
+                    "type": "number"
+                },
                 "document_id": {
                     "type": "string"
                 },
-                "filename": {
+                "document_name": {
                     "type": "string"
                 },
                 "metadata": {
                     "type": "object",
                     "additionalProperties": true
                 },
-                "processing_time_ms": {
+                "score": {
                     "type": "number"
                 },
-                "status": {
+                "text": {
                     "type": "string"
-                },
-                "total_chunks": {
-                    "type": "integer"
-                },
-                "vector_db_stored": {
-                    "type": "boolean"
                 }
             }
         },
-        "services.VectorDocument": {
+        "services.UploadDocumentResponse": {
             "type": "object",
             "properties": {
                 "chunk_count": {
@@ -1535,7 +1893,20 @@ const docTemplate = `{
                 "filename": {
                     "type": "string"
                 },
-                "title": {
+                "job_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "processing_time_ms": {
+                    "type": "number"
+                },
+                "status": {
                     "type": "string"
                 }
             }
