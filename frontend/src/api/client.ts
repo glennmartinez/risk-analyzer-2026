@@ -14,6 +14,7 @@ import type {
   DeleteDocumentResponse,
   DeleteCollectionResponse,
 } from "../models/Documents";
+import type { CollectionsResponse, Collection } from "../models/Collections";
 
 const API_BASE_URL = "http://localhost:8080";
 
@@ -188,8 +189,22 @@ class ApiClient {
   }
 
   // List all collections from vector store
-  async listCollections(): Promise<{ collections: string[] }> {
-    return this.request<{ collections: string[] }>("/search/collections");
+  async listCollections(): Promise<CollectionsResponse> {
+    return this.request<CollectionsResponse>("/api/v1/collections");
+  }
+
+  // Get collection info
+  async getCollectionInfo(collectionName: string): Promise<Collection> {
+    return this.request<Collection>(
+      `/api/v1/collections/${encodeURIComponent(collectionName)}`,
+    );
+  }
+
+  // Get document chunks
+  async getDocumentChunks(documentId: string): Promise<{ chunks: any[] }> {
+    return this.request<{ chunks: any[] }>(
+      `/api/v1/documents/${encodeURIComponent(documentId)}/chunks`,
+    );
   }
 }
 export const apiClient = new ApiClient();
