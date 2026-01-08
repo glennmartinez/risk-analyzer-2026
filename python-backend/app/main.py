@@ -17,6 +17,7 @@ from .routes import (
     health_router,
     metadata_router,
     parse_router,
+    process_callback_router,
     rag_router,
     search_router,
 )
@@ -100,6 +101,7 @@ This service provides:
 
     # New stateless compute routers (Phase 2)
     app.include_router(parse_router)
+    app.include_router(process_callback_router)
     app.include_router(chunk_router)
     app.include_router(embed_router)
     app.include_router(metadata_router)

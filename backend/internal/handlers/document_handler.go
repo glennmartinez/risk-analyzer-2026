@@ -120,6 +120,125 @@ func (h *DocumentHandler) UploadDocument(w http.ResponseWriter, r *http.Request)
 	h.sendJSON(w, http.StatusOK, resp)
 }
 
+// UploadDocumentNew godoc
+// @Summary Upload a new document
+// @Description Upload and process a document for vector storage
+// @Tags documents
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Document file"
+// @Param collection formData string true "Collection name"
+// @Param chunking_strategy formData string false "Chunking strategy" default(semantic)
+// @Param chunk_size formData int false "Chunk size" default(512)
+// @Param chunk_overlap formData int false "Chunk overlap" default(50)
+// @Param extract_metadata formData bool false "Extract metadata" default(false)
+// @Param num_questions formData int false "Number of questions" default(3)
+// @Param max_pages formData int false "Max pages to process" default(0)
+// @Param async formData bool false "Process asynchronously" default(false)
+// @Success 200 {object} services.UploadDocumentResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/documents/upload-new [post]
+func (h *DocumentHandler) UploadDocumentNew(w http.ResponseWriter, r *http.Request) {
+	h.logger.Printf("Received Upload Document Request %s", r.RemoteAddr)
+
+	// Get file
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		h.logger.Printf("No file uploaded: %v", err)
+		h.sendError(w, http.StatusBadRequest, "No file uploaded")
+		return
+	}
+	defer file.Close()
+
+	// Get file info
+	fileSize := header.Size
+	filename := header.Filename
+
+	// Parse form parameters
+	collection := r.FormValue("collection")
+	if collection == "" {
+		h.sendError(w, http.StatusBadRequest, "Collection name is required")
+		return
+	}
+
+	chunkingStrategy := r.FormValue("chunking_strategy")
+	if chunkingStrategy == "" {
+		chunkingStrategy = "semantic"
+	}
+
+	chunkSize := h.getIntParam(r, "chunk_size", 512)
+	chunkOverlap := h.getIntParam(r, "chunk_overlap", 50)
+	extractMetadata := h.getBoolParam(r, "extract_metadata", false)
+	numQuestions := h.getIntParam(r, "num_questions", 3)
+	maxPages := h.getIntParam(r, "max_pages", 0)
+	async := h.getBoolParam(r, "async", false)
+
+	// Debug logging for form parameters
+	h.logger.Printf("DEBUG Form params - chunk_size=%d, chunk_overlap=%d, extract_metadata=%v, num_questions=%d, max_pages=%d, async=%v",
+		chunkSize, chunkOverlap, extractMetadata, numQuestions, maxPages, async)
+	h.logger.Printf("DEBUG Raw form values - max_pages='%s', extract_metadata='%s', num_questions='%s'",
+		r.FormValue("max_pages"), r.FormValue("extract_metadata"), r.FormValue("num_questions"))
+
+	// Create upload request
+	req := &services.UploadDocumentRequest{
+		Filename:         filename,
+		FileContent:      file,
+		FileSize:         fileSize,
+		Collection:       collection,
+		ChunkingStrategy: chunkingStrategy,
+		ChunkSize:        chunkSize,
+		ChunkOverlap:     chunkOverlap,
+		ExtractMetadata:  extractMetadata,
+		NumQuestions:     numQuestions,
+		MaxPages:         maxPages,
+		Async:            async,
+	}
+
+	//create job
+	resp, err := h.docService.UploadDocumentNew(r.Context(), req)
+	// send first request to python backend for parsing and pass it a callback url
+
+	if err != nil {
+		h.logger.Printf("Upload failed: %v", err)
+		h.sendError(w, http.StatusInternalServerError, fmt.Sprintf("Upload failed: %v", err))
+		return
+	}
+
+	h.sendJSON(w, http.StatusOK, resp)
+
+}
+
+// UploadCallback godoc
+// @Summary      Mark document upload as completed
+// @Description  Callback endpoint for completed uploads
+// @Tags         documents
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  map[string]interface{}  true  "Completion payload"
+// @Success      200   {object}  map[string]string
+// @Failure      400   {object}  map[string]string
+// @Router       /api/v1/documents/upload-callback [post]
+func (h *DocumentHandler) UploadCallback(w http.ResponseWriter, r *http.Request) {
+	h.logger.Printf("Upload Completed request received %s", r.RemoteAddr)
+
+	// Parse JSON payload from Python callback
+	var cb services.CallbackRequest
+	if err := json.NewDecoder(r.Body).Decode(&cb); err != nil {
+		h.logger.Printf("Invalid callback payload: %v", err)
+		h.sendError(w, http.StatusBadRequest, "invalid callback payload")
+		return
+	}
+
+	// Return a simple acknowledgement
+	response := map[string]string{
+		"document_id": cb.DocumentID,
+		"status":      cb.Status,
+		"message":     "callback processed",
+	}
+	h.sendJSON(w, http.StatusOK, response)
+}
+
 // DocumentListResponse represents a list of documents response
 type DocumentListResponse struct {
 	Documents interface{} `json:"documents"`

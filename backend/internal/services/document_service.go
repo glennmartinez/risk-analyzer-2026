@@ -91,6 +91,115 @@ func (s *DocumentService) UploadDocument(ctx context.Context, req *UploadDocumen
 	return s.uploadDocumentSync(ctx, req, documentID, startTime)
 }
 
+type DocumentCallbackPayload struct {
+	DocumentID  string            `json:"document_id"`
+	CallbackUrl string            `json:"callback_url"`
+	Status      string            `json:"status"`
+	Message     string            `json:"message,omitempty"`
+	Job         *repositories.Job `json:"job"`
+}
+
+// UploadCallbackRequest represents the payload that the Python service will POST back
+// to the Go callback endpoint when processing is finished.
+type UploadCallbackRequest struct {
+	DocumentID  string                 `json:"document_id"`
+	PythonJobID string                 `json:"python_job_id,omitempty"`
+	Status      string                 `json:"status"`
+	Message     string                 `json:"message,omitempty"`
+	Job         map[string]interface{} `json:"job,omitempty"`
+	Chunks      []interface{}          `json:"chunks,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// CallbackRequest is an alias used by HTTP handlers (keeps handler code stable)
+type CallbackRequest = UploadCallbackRequest
+
+// UploadCallbackResponse represents the response returned by the service after handling
+// a callback from the Python service.
+type UploadCallbackResponse struct {
+	DocumentID string `json:"document_id"`
+	JobID      string `json:"job_id,omitempty"`
+	Status     string `json:"status"`
+	Message    string `json:"message,omitempty"`
+}
+
+// NEWWWW REQUEST HERE SPIKE
+func (s *DocumentService) UploadDocumentNew(ctx context.Context, req *UploadDocumentRequest) (*UploadDocumentResponse, error) {
+	// Validate request
+	if err := s.validateUploadRequest(req); err != nil {
+		s.logger.Printf("Invalid upload request: %v", err)
+		return nil, fmt.Errorf("invalid request: %w", err)
+	}
+
+	// Generate document & Job ID
+	documentID := uuid.New().String()
+	jobID := uuid.New().String()
+
+	// Create job in repository
+	job := &repositories.Job{
+		ID:         jobID,
+		Type:       repositories.JobTypeDocumentUpload,
+		Status:     repositories.JobStatusQueued,
+		Priority:   1,
+		Progress:   0,
+		Message:    "Document upload queued",
+		MaxRetries: 3,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+		Payload: map[string]interface{}{
+			"document_id":       documentID,
+			"filename":          req.Filename,
+			"file_path":         "DUMMY4NOW", // Add file path for worker
+			"file_size":         req.FileSize,
+			"collection":        req.Collection,
+			"chunking_strategy": req.ChunkingStrategy,
+			"chunk_size":        req.ChunkSize,
+			"chunk_overlap":     req.ChunkOverlap,
+			"extract_metadata":  req.ExtractMetadata,
+			"num_questions":     req.NumQuestions,
+			"max_pages":         req.MaxPages,
+		},
+	}
+
+	if err := s.jobRepo.CreateJob(ctx, job); err != nil {
+		s.logger.Printf("Failed to create job: %v", err)
+		return nil, fmt.Errorf("failed to create job: %w", err)
+	}
+
+	s.logger.Printf("Created async upload job: job_id=%s, document_id=%s", jobID, documentID)
+
+	// send callback request to python for processing
+	callbackJobRequest := DocumentCallbackPayload{
+		DocumentID:  documentID,
+		CallbackUrl: "/api/v1/documents/upload-callback",
+		Status:      "processing",
+		Message:     "Document sent for processing",
+		Job:         job,
+	}
+
+	// Call Python server with callback payload and capture python-side job id and status
+	pythonJobID, pythonStatus, err := s.pythonClient.CreateJobWithCallback(ctx, callbackJobRequest)
+	if err != nil {
+		s.logger.Printf("Failed to call python server: %v", err)
+		// Optionally update job/document status to failed here
+		return nil, fmt.Errorf("failed to call python server: %w", err)
+	}
+
+	// Return response including both the internal job id and the python-side job id/status
+	return &UploadDocumentResponse{
+		DocumentID:       documentID,
+		JobID:            jobID,
+		Filename:         req.Filename,
+		Collection:       req.Collection,
+		ChunkCount:       0,
+		Status:           pythonStatus,
+		Message:          fmt.Sprintf("Document sent for processing (python_job_id=%s)", pythonJobID),
+		Metadata:         nil,
+		ProcessingTimeMs: 0,
+	}, nil
+
+}
+
 // uploadDocumentAsync creates a job for async processing
 func (s *DocumentService) uploadDocumentAsync(ctx context.Context, req *UploadDocumentRequest, documentID string) (*UploadDocumentResponse, error) {
 	jobID := uuid.New().String()

@@ -27,6 +27,7 @@ type PythonClientInterface interface {
 	HealthCheck(ctx context.Context, service string) (bool, error)
 	GetAvailableModels(ctx context.Context) ([]map[string]interface{}, error)
 	GetChunkingStrategies(ctx context.Context) ([]string, error)
+	CreateJobWithCallback(ctx context.Context, payload DocumentCallbackPayload) (string, string, error)
 }
 
 // PythonClient handles communication with the Python backend compute endpoints
@@ -172,7 +173,6 @@ type MetadataResponse struct {
 // ============================================================================
 // HTTP Helper Methods
 // ============================================================================
-
 // doRequest performs an HTTP request with retry logic
 func (c *PythonClient) doRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
 	var lastErr error
@@ -314,6 +314,32 @@ func (c *PythonClient) ParseDocument(ctx context.Context, fileData []byte, filen
 	}
 
 	return nil, fmt.Errorf("parse document failed after retries: %w", lastErr)
+}
+
+/*
+CreateJobWithCallback sends the full DocumentCallbackPayload to the Python
+service and returns the python-side job_id (if any). The Python endpoint is
+expected to return a JSON object that contains at least a "job_id" field and
+optionally a "status" field.
+*/
+func (c *PythonClient) CreateJobWithCallback(ctx context.Context, payload DocumentCallbackPayload) (string, string, error) {
+	// Use doRequest which includes retry logic and consistent headers
+	resp, err := c.doRequest(ctx, "POST", "/process-with-callback", payload)
+	if err != nil {
+		return "", "", fmt.Errorf("create job request failed: %w", err)
+	}
+
+	// Expecting JSON like: { "job_id": "abc123", "status": "accepted" }
+	var result struct {
+		JobID  string `json:"job_id"`
+		Status string `json:"status,omitempty"`
+	}
+	if err := parseResponse(resp, &result); err != nil {
+		return "", "", err
+	}
+
+	// Return the job id and status provided by the Python service (if any)
+	return result.JobID, result.Status, nil
 }
 
 // ParseText parses plain text content

@@ -11,11 +11,13 @@ from .embed import router as embed_router
 from .health import router as health_router
 from .metadata import router as metadata_router
 from .parse import router as parse_router
+from .process_callback import router as process_callback_router
 
 __all__ = [
     # Primary compute routers
     "parse_router",
     "chunk_router",
+    "process_callback_router",
     "embed_router",
     "metadata_router",
     "health_router",

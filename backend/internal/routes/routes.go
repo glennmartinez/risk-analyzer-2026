@@ -108,6 +108,8 @@ func RegisterRoutes(router *mux.Router, h *Handlers) {
 	// Document routes - New orchestrated endpoints
 	if h.DocHandler != nil {
 		router.HandleFunc("/api/v1/documents/upload", h.DocHandler.UploadDocument).Methods("POST")
+		router.HandleFunc("/api/v1/documents/upload-new", h.DocHandler.UploadDocumentNew).Methods("POST")
+		router.HandleFunc("/api/v1/documents/upload-callback", h.DocHandler.UploadCallback).Methods("POST")
 		router.HandleFunc("/api/v1/documents", h.DocHandler.ListDocuments).Methods("GET")
 		router.HandleFunc("/api/v1/documents/{id}", h.DocHandler.GetDocument).Methods("GET")
 		router.HandleFunc("/api/v1/documents/{id}", h.DocHandler.DeleteDocument).Methods("DELETE")

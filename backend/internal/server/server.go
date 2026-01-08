@@ -267,7 +267,7 @@ func startWorkers(pythonClient services.PythonClientInterface, docRepo repositor
 		WorkerConfig: workers.WorkerConfig{
 			WorkerName:      "upload-worker",
 			PollInterval:    2 * time.Second,
-			Concurrency:     3,
+			Concurrency:     1,
 			ShutdownTimeout: 30 * time.Second,
 			MaxRetries:      3,
 			RetryDelay:      5 * time.Second,

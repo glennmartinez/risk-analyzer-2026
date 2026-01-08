@@ -370,6 +370,153 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/documents/upload-completed": {
+            "post": {
+                "description": "Callback endpoint for completed uploads",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Mark document upload as completed",
+                "parameters": [
+                    {
+                        "description": "Completion payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/documents/upload-new": {
+            "post": {
+                "description": "Upload and process a document for vector storage",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "documents"
+                ],
+                "summary": "Upload a new document",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Document file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Collection name",
+                        "name": "collection",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "semantic",
+                        "description": "Chunking strategy",
+                        "name": "chunking_strategy",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 512,
+                        "description": "Chunk size",
+                        "name": "chunk_size",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Chunk overlap",
+                        "name": "chunk_overlap",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Extract metadata",
+                        "name": "extract_metadata",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 3,
+                        "description": "Number of questions",
+                        "name": "num_questions",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Max pages to process",
+                        "name": "max_pages",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Process asynchronously",
+                        "name": "async",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.UploadDocumentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/documents/{id}": {
             "get": {
                 "description": "Get document by ID",
@@ -1452,6 +1599,15 @@ const docTemplate = `{
                 "document_id": {
                     "type": "string"
                 },
+                "job_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "progress": {
+                    "type": "integer"
+                },
                 "status": {
                     "type": "string"
                 }
@@ -1757,6 +1913,12 @@ const docTemplate = `{
                 },
                 "document_count": {
                     "type": "integer"
+                },
+                "document_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "metadata": {
                     "type": "object",
