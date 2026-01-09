@@ -196,7 +196,8 @@ func (h *DocumentHandler) UploadDocumentNew(w http.ResponseWriter, r *http.Reque
 	}
 
 	//create job
-	resp, err := h.docService.UploadDocumentNew(r.Context(), req)
+	// resp, err := h.docService.UploadDocumentNew(r.Context(), req)
+	resp, err := h.docService.UploadDocument(r.Context(), req)
 	// send first request to python backend for parsing and pass it a callback url
 
 	if err != nil {

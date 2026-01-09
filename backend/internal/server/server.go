@@ -15,6 +15,7 @@ import (
 	"risk-analyzer/internal/repositories"
 	"risk-analyzer/internal/routes"
 	"risk-analyzer/internal/services"
+	"risk-analyzer/internal/services/processors"
 	"risk-analyzer/internal/workers"
 
 	"github.com/gorilla/mux"
@@ -54,9 +55,22 @@ func NewServer() *http.Server {
 	var collectionHandler *handlers.CollectionHandler
 
 	if docRepo != nil && vectorRepo != nil && jobRepo != nil {
+		// Services Creation
 		documentService = services.NewDocumentService(pythonClient, docRepo, vectorRepo, jobRepo, logger)
 		searchService = services.NewSearchService(pythonClient, vectorRepo, docRepo, logger)
 		collectionService = services.NewCollectionService(vectorRepo, docRepo, logger)
+
+		// Register processors into a job state machine
+		jobStateMachine := services.NewJobStateMachine(jobRepo)
+		callbackBase := os.Getenv("GO_CALLBACK_BASE")
+		if callbackBase == "" {
+			callbackBase = "http://localhost:8080"
+		}
+		if err := processors.RegisterAll(jobStateMachine, pythonClient, jobRepo, docRepo, callbackBase); err != nil {
+			logger.Printf("⚠️  Failed to register processors: %v", err)
+		} else {
+			logger.Println("✅ Processors registered with JobStateMachine")
+		}
 
 		// Create handlers
 		docHandler = handlers.NewDocumentHandler(documentService, logger)
@@ -64,7 +78,7 @@ func NewServer() *http.Server {
 		collectionHandler = handlers.NewCollectionHandler(collectionService, logger)
 
 		// Start background workers for async job processing
-		go startWorkers(pythonClient, docRepo, vectorRepo, jobRepo, logger)
+		go startWorkers(pythonClient, docRepo, vectorRepo, jobRepo, logger, jobStateMachine)
 
 		logger.Println("✅ Orchestration services initialized successfully")
 		logger.Println("✅ Background workers started for async job processing")
@@ -256,35 +270,56 @@ func getChromaConfig() db.ChromaDBConfig {
 }
 
 // startWorkers initializes and starts background workers for async job processing
-func startWorkers(pythonClient services.PythonClientInterface, docRepo repositories.DocumentRepository, vectorRepo repositories.VectorRepository, jobRepo repositories.JobRepository, logger *log.Logger) {
+func startWorkers(pythonClient services.PythonClientInterface, docRepo repositories.DocumentRepository, vectorRepo repositories.VectorRepository, jobRepo repositories.JobRepository, logger *log.Logger, jobStateMachine *services.JobStateMachine) {
 	ctx := context.Background()
 
 	// Create a simple logger wrapper for workers
 	workerLogger := &simpleLogger{logger: logger}
 
 	// Create upload worker
-	uploadWorker := workers.NewUploadWorker(workers.UploadWorkerConfig{
+	// uploadWorker := workers.NewUploadWorker(workers.UploadWorkerConfig{
+	// 	WorkerConfig: workers.WorkerConfig{
+	// 		WorkerName:      "upload-worker",
+	// 		PollInterval:    2 * time.Second,
+	// 		Concurrency:     1,
+	// 		ShutdownTimeout: 30 * time.Second,
+	// 		MaxRetries:      3,
+	// 		RetryDelay:      5 * time.Second,
+	// 		EnableRecovery:  true,
+	// 	},
+	// 	JobRepo:      jobRepo,
+	// 	DocumentRepo: docRepo,
+	// 	VectorRepo:   vectorRepo,
+	// 	PythonClient: &pythonClientAdapter{client: pythonClient},
+	// 	Logger:       workerLogger,
+	// })
+
+	// // Start the worker
+	// if err := uploadWorker.Start(ctx); err != nil {
+	// 	logger.Printf("⚠️  Failed to start upload worker: %v", err)
+	// } else {
+	// 	logger.Println("✅ Upload worker started successfully")
+	// }
+
+	stateMachineWorker := workers.NewStateMachineWorker(workers.StateMachineWorkerConfig{
 		WorkerConfig: workers.WorkerConfig{
-			WorkerName:      "upload-worker",
-			PollInterval:    2 * time.Second,
+			WorkerName:      "state-machine-worker",
+			PollInterval:    10 * time.Second,
 			Concurrency:     1,
 			ShutdownTimeout: 30 * time.Second,
-			MaxRetries:      3,
+			MaxRetries:      0,
 			RetryDelay:      5 * time.Second,
 			EnableRecovery:  true,
 		},
-		JobRepo:      jobRepo,
-		DocumentRepo: docRepo,
-		VectorRepo:   vectorRepo,
-		PythonClient: &pythonClientAdapter{client: pythonClient},
-		Logger:       workerLogger,
+		JobRepo:         jobRepo,
+		JobStateMachine: jobStateMachine,
+		Logger:          workerLogger,
 	})
 
-	// Start the worker
-	if err := uploadWorker.Start(ctx); err != nil {
-		logger.Printf("⚠️  Failed to start upload worker: %v", err)
+	if err := stateMachineWorker.Start(ctx); err != nil {
+		logger.Printf("⚠️  Failed to start state-machine worker: %v", err)
 	} else {
-		logger.Println("✅ Upload worker started successfully")
+		logger.Println("✅ State-machine worker started successfully")
 	}
 }
 

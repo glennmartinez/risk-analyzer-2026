@@ -38,6 +38,11 @@ const (
 	JobTypeVectorReindex    JobType = "vector_reindex"
 	JobTypeMetadataExtract  JobType = "metadata_extract"
 	JobTypeBulkImport       JobType = "bulk_import"
+
+	// process Jobs
+	JobTypeDocumentParce    JobType = "document_parse"
+	JobTypeDocumentChunking JobType = "document_chunking"
+	JobTypeDocumentEmbed    JobType = "document_embed"
 )
 
 // JobStatus represents the current status of a job
