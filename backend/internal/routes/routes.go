@@ -40,6 +40,7 @@ type Handlers struct {
 	DocHandler        *handlers.DocumentHandler
 	SearchHandler     *handlers.SearchHandler
 	CollectionHandler *handlers.CollectionHandler
+	ContentHandler    *handlers.ContentHandler
 }
 
 // RegisterRoutes sets up all application routes
@@ -130,5 +131,11 @@ func RegisterRoutes(router *mux.Router, h *Handlers) {
 		router.HandleFunc("/api/v1/collections/{name}", h.CollectionHandler.GetCollection).Methods("GET")
 		router.HandleFunc("/api/v1/collections/{name}", h.CollectionHandler.DeleteCollection).Methods("DELETE")
 		router.HandleFunc("/api/v1/collections/{name}/stats", h.CollectionHandler.GetCollectionStats).Methods("GET")
+	}
+
+	// Content ingestion routes
+	if h.ContentHandler != nil {
+		router.HandleFunc("/api/v1/content/ingest", h.ContentHandler.IngestContent).Methods("POST")
+		router.HandleFunc("/api/v1/content/{id}/status", h.ContentHandler.GetContentStatus).Methods("GET")
 	}
 }

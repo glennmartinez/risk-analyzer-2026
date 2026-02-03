@@ -46,13 +46,13 @@ func NewServer() *http.Server {
 	pythonClient := initializePythonClient(logger)
 	docRepo, vectorRepo, jobRepo := initializeRepositories(logger)
 
-	// Create service layer (only if repositories are available)
 	var documentService *services.DocumentService
 	var searchService *services.SearchService
 	var collectionService *services.CollectionService
 	var docHandler *handlers.DocumentHandler
 	var searchHandler *handlers.SearchHandler
 	var collectionHandler *handlers.CollectionHandler
+	var contentHandler *handlers.ContentHandler
 
 	if docRepo != nil && vectorRepo != nil && jobRepo != nil {
 		// Services Creation
@@ -66,19 +66,21 @@ func NewServer() *http.Server {
 		if callbackBase == "" {
 			callbackBase = "http://localhost:8080"
 		}
-		if err := processors.RegisterAll(jobStateMachine, pythonClient, jobRepo, docRepo, callbackBase); err != nil {
+		if err := processors.RegisterAll(jobStateMachine, pythonClient, jobRepo, docRepo, vectorRepo, callbackBase); err != nil {
 			logger.Printf("⚠️  Failed to register processors: %v", err)
 		} else {
 			logger.Println("✅ Processors registered with JobStateMachine")
 		}
 
 		// Create handlers
-		docHandler = handlers.NewDocumentHandler(documentService, logger)
+		docHandler = handlers.NewDocumentHandler(documentService, logger, jobStateMachine)
 		searchHandler = handlers.NewSearchHandler(searchService, logger)
 		collectionHandler = handlers.NewCollectionHandler(collectionService, logger)
 
+		contentHandler := handlers.NewContentHandler(docRepo, jobRepo, logger, jobStateMachine)
+
 		// Start background workers for async job processing
-		go startWorkers(pythonClient, docRepo, vectorRepo, jobRepo, logger, jobStateMachine)
+		go startWorkers(pythonClient, docRepo, vectorRepo, jobRepo, logger, jobStateMachine, contentHandler)
 
 		logger.Println("✅ Orchestration services initialized successfully")
 		logger.Println("✅ Background workers started for async job processing")
@@ -122,6 +124,7 @@ func NewServer() *http.Server {
 		DocHandler:        docHandler,
 		SearchHandler:     searchHandler,
 		CollectionHandler: collectionHandler,
+		ContentHandler:    contentHandler,
 	}
 
 	router := mux.NewRouter()
@@ -270,7 +273,7 @@ func getChromaConfig() db.ChromaDBConfig {
 }
 
 // startWorkers initializes and starts background workers for async job processing
-func startWorkers(pythonClient services.PythonClientInterface, docRepo repositories.DocumentRepository, vectorRepo repositories.VectorRepository, jobRepo repositories.JobRepository, logger *log.Logger, jobStateMachine *services.JobStateMachine) {
+func startWorkers(pythonClient services.PythonClientInterface, docRepo repositories.DocumentRepository, vectorRepo repositories.VectorRepository, jobRepo repositories.JobRepository, logger *log.Logger, jobStateMachine *services.JobStateMachine, contentHandler *handlers.ContentHandler) {
 	ctx := context.Background()
 
 	// Create a simple logger wrapper for workers

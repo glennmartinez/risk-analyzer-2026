@@ -28,6 +28,7 @@ type PythonClientInterface interface {
 	GetAvailableModels(ctx context.Context) ([]map[string]interface{}, error)
 	GetChunkingStrategies(ctx context.Context) ([]string, error)
 	CreateJobWithCallback(ctx context.Context, payload DocumentCallbackPayload) (string, string, error)
+	CreateParseJobWithCallback(ctx context.Context, fileData []byte, filename string, extractMetadata bool, maxPages int, callbackURL string, goJobID string) (string, string, error)
 }
 
 // PythonClient handles communication with the Python backend compute endpoints
@@ -359,6 +360,89 @@ func (c *PythonClient) ParseText(ctx context.Context, text string) (*ParseRespon
 	}
 
 	return &result, nil
+}
+
+func (c *PythonClient) CreateParseJobWithCallback(ctx context.Context, fileData []byte, filename string, extractMetadata bool, maxPages int, callbackURL string, goJobID string) (string, string, error) {
+	url := c.baseURL + "/parse/document"
+
+	// Execute with retry
+	var lastErr error
+	for attempt := 0; attempt <= c.retries; attempt++ {
+		if attempt > 0 {
+			backoff := time.Duration(attempt*attempt) * time.Second
+			time.Sleep(backoff)
+		}
+
+		// Create fresh multipart form data for each attempt (body gets consumed)
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+
+		// Add file
+		part, err := writer.CreateFormFile("file", filename)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to create form file: %w", err)
+		}
+		if _, err := io.Copy(part, bytes.NewReader(fileData)); err != nil {
+			return "", "", fmt.Errorf("failed to write file data: %w", err)
+		}
+
+		// Add form fields
+		if err := writer.WriteField("extract_metadata", fmt.Sprintf("%t", extractMetadata)); err != nil {
+			return "", "", err
+		}
+		if err := writer.WriteField("max_pages", fmt.Sprintf("%d", maxPages)); err != nil {
+			return "", "", err
+		}
+
+		// Add callback-specific fields so Python will treat this as an async job
+		if callbackURL != "" {
+			if err := writer.WriteField("callback_url", callbackURL); err != nil {
+				return "", "", err
+			}
+		}
+		if goJobID != "" {
+			// Use go_job_id as the field name expected by Python's parse endpoint
+			if err := writer.WriteField("go_job_id", goJobID); err != nil {
+				return "", "", err
+			}
+		}
+
+		if err := writer.Close(); err != nil {
+			return "", "", err
+		}
+
+		// Create request
+		req, err := http.NewRequestWithContext(ctx, "POST", url, body)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to create request: %w", err)
+		}
+
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		// Expect JSON like: { "python_job_id": "...", "status": "accepted" }
+		var result struct {
+			PythonJobID string `json:"python_job_id"`
+			Status      string `json:"status,omitempty"`
+		}
+		if resp.StatusCode < 500 {
+			if err := parseResponse(resp, &result); err != nil {
+				return "", "", err
+			}
+			return result.PythonJobID, result.Status, nil
+		}
+
+		resp.Body.Close()
+		lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	return "", "", fmt.Errorf("create parse job failed after retries: %w", lastErr)
 }
 
 // ============================================================================

@@ -86,12 +86,32 @@ func (w *StateMachineWorker) processJobs(ctx context.Context, workerID int) {
 				return
 			}
 
-			job, err := w.jobRepo.DequeueJob(ctx, repositories.JobTypeDocumentUpload)
+			// Attempt to dequeue across processing job types (upload, parse, chunking, embed)
+			var job *repositories.Job
+			var err error
+			jobTypes := []repositories.JobType{
+				repositories.JobTypeDocumentUpload,
+				repositories.JobTypeDocumentParce,
+				repositories.JobTypeDocumentChunking,
+				repositories.JobTypeDocumentEmbed,
+			}
+			for _, jt := range jobTypes {
+				job, err = w.jobRepo.DequeueJob(ctx, jt)
+				if err != nil {
+					w.logger.Error("Failed to dequeue job for type %s: %v", jt, err)
+					// on repository error, break and allow the loop tick to continue
+					break
+				}
+				if job != nil {
+					// found a job to process
+					break
+				}
+			}
 			if err != nil {
-				w.logger.Error("Failed to dequeue job: %v", err)
 				continue
 			}
 			if job == nil {
+				// no jobs available for any of the supported types
 				continue
 			}
 

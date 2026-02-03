@@ -74,6 +74,17 @@ const (
 	JobTypeVectorReindex    JobType = "vector_reindex"
 	JobTypeMetadataExtract  JobType = "metadata_extract"
 	JobTypeBulkImport       JobType = "bulk_import"
+
+	// process Jobs
+	JobTypeDocumentParce    JobType = "document_parse"
+	JobTypeDocumentChunking JobType = "document_chunking"
+	JobTypeDocumentEmbed    JobType = "document_embed"
+
+	// Source ingestion Jobs
+	JobTypeJiraIngest     JobType = "jira_ingest"
+	JobTypeNotionIngest   JobType = "notion_ingest"
+	JobTypeMarkdownIngest JobType = "markdown_ingest"
+	JobTypeJSONIngest     JobType = "json_ingest"
 )
 
 // JobStatus represents the current status of a job
@@ -234,8 +245,13 @@ func (j *Job) Validate() error {
 // IsValid checks if job type is valid
 func (t JobType) IsValid() bool {
 	switch t {
+	// Accepted API / management job types
 	case JobTypeDocumentUpload, JobTypeDocumentDelete, JobTypeCollectionDelete,
-		JobTypeVectorReindex, JobTypeMetadataExtract, JobTypeBulkImport:
+		JobTypeVectorReindex, JobTypeMetadataExtract, JobTypeBulkImport,
+		// Processing job types (parsing, chunking, embedding) - allow these as valid job types
+		JobTypeDocumentParce, JobTypeDocumentChunking, JobTypeDocumentEmbed,
+		// Source ingestion job types
+		JobTypeJiraIngest, JobTypeNotionIngest, JobTypeMarkdownIngest, JobTypeJSONIngest:
 		return true
 	default:
 		return false

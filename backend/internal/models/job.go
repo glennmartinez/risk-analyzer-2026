@@ -43,6 +43,12 @@ const (
 	JobTypeDocumentParce    JobType = "document_parse"
 	JobTypeDocumentChunking JobType = "document_chunking"
 	JobTypeDocumentEmbed    JobType = "document_embed"
+
+	// Source ingestion Jobs
+	JobTypeJiraIngest     JobType = "jira_ingest"
+	JobTypeNotionIngest   JobType = "notion_ingest"
+	JobTypeMarkdownIngest JobType = "markdown_ingest"
+	JobTypeJSONIngest     JobType = "json_ingest"
 )
 
 // JobStatus represents the current status of a job

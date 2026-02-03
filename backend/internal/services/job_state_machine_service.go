@@ -36,6 +36,11 @@ type JobProcessor interface {
 	// Implementation should perform processing or trigger external processing (eg call Python)
 	// and return an error only if the immediate kickoff failed.
 	StartProcessing(ctx context.Context, job *repositories.Job) error
+
+	// HandleCallback is invoked when an external processor (Python) posts callback data.
+	// Implementations should persist processor-specific results, may create/enqueue subsequent jobs,
+	// and return an error if callback handling failed.
+	HandleCallback(ctx context.Context, job *repositories.Job, payload map[string]interface{}) error
 }
 
 type JobStateMachine struct {
@@ -122,12 +127,27 @@ func (m *JobStateMachine) HandleEvent(ctx context.Context, jobID string, event J
 		return nil
 
 	case EventCallbackReceipt:
-		// payload contains callback data; map to success/failure and update job/document accordingly
-		statusStr, _ := payload["status"].(string)
-		if statusStr == "completed" || statusStr == "success" {
-			return m.HandleEvent(ctx, jobID, EventSuccess, payload)
+		// payload contains callback data; first allow processor to persist processor-specific info
+		if p, ok := m.processors[job.Type]; ok {
+			// Call processor.HandleCallback to persist results and potentially create next jobs.
+			if err := p.HandleCallback(ctx, job, payload); err != nil {
+				return fmt.Errorf("processor HandleCallback failed: %w", err)
+			}
 		}
-		return m.HandleEvent(ctx, jobID, EventFailure, payload)
+		// Now map callback status to success/failure and update job/document accordingly
+		statusStr, _ := payload["status"].(string)
+		switch statusStr {
+		case "completed", "success":
+			return m.HandleEvent(ctx, jobID, EventSuccess, payload)
+		case "processing", "accepted":
+			// Python sends a "processing" callback when it starts work.
+			// Just acknowledge it - job is already in processing state.
+			log.Printf("Job %s received '%s' status callback - acknowledged", job.ID, statusStr)
+			return nil
+		default:
+			// Treat any other status (including "failed" or unknown) as failure
+			return m.HandleEvent(ctx, jobID, EventFailure, payload)
+		}
 	default:
 		return fmt.Errorf("unsupported event: %s", event)
 	}

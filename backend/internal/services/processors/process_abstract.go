@@ -10,9 +10,10 @@ import (
 
 // BaseProcessor contains shared dependencies and common helpers for all processors.
 type BaseProcessor struct {
-	Py      services.PythonClientInterface
-	JobRepo repositories.JobRepository
-	DocRepo repositories.DocumentRepository
+	Py         services.PythonClientInterface
+	JobRepo    repositories.JobRepository
+	DocRepo    repositories.DocumentRepository
+	VectorRepo repositories.VectorRepository
 
 	// CallbackBase is the base host + scheme for building the callback.
 	// Example: "http://go-server:8080"

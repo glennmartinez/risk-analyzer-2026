@@ -15,15 +15,17 @@ import (
 
 // DocumentHandler handles HTTP requests for document operations
 type DocumentHandler struct {
-	docService *services.DocumentService
-	logger     *log.Logger
+	docService      *services.DocumentService
+	logger          *log.Logger
+	jobStateMachine *services.JobStateMachine
 }
 
 // NewDocumentHandler creates a new document handler
-func NewDocumentHandler(docService *services.DocumentService, logger *log.Logger) *DocumentHandler {
+func NewDocumentHandler(docService *services.DocumentService, logger *log.Logger, jobStateMachine *services.JobStateMachine) *DocumentHandler {
 	return &DocumentHandler{
-		docService: docService,
-		logger:     logger,
+		docService:      docService,
+		logger:          logger,
+		jobStateMachine: jobStateMachine,
 	}
 }
 
@@ -223,21 +225,62 @@ func (h *DocumentHandler) UploadDocumentNew(w http.ResponseWriter, r *http.Reque
 func (h *DocumentHandler) UploadCallback(w http.ResponseWriter, r *http.Request) {
 	h.logger.Printf("Upload Completed request received %s", r.RemoteAddr)
 
-	// Parse JSON payload from Python callback
-	var cb services.CallbackRequest
-	if err := json.NewDecoder(r.Body).Decode(&cb); err != nil {
+	// Decode incoming JSON payload into a generic map so we can route based on job id/type.
+	var payload map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		h.logger.Printf("Invalid callback payload: %v", err)
 		h.sendError(w, http.StatusBadRequest, "invalid callback payload")
 		return
 	}
 
-	// Return a simple acknowledgement
-	response := map[string]string{
-		"document_id": cb.DocumentID,
-		"status":      cb.Status,
-		"message":     "callback processed",
+	// Try to extract Go job ID (prefer payload.job.id, fall back to job_id/go_job_id)
+	var jobID string
+	if jobObj, ok := payload["job"].(map[string]interface{}); ok {
+		if idv, ok2 := jobObj["id"].(string); ok2 && idv != "" {
+			jobID = idv
+		}
 	}
-	h.sendJSON(w, http.StatusOK, response)
+	if jobID == "" {
+		if idv, ok := payload["job_id"].(string); ok && idv != "" {
+			jobID = idv
+		}
+	}
+	if jobID == "" {
+		if idv, ok := payload["go_job_id"].(string); ok && idv != "" {
+			jobID = idv
+		}
+	}
+
+	// If still missing, reject. (Optionally you could implement python_job_id -> job lookup.)
+	if jobID == "" {
+		h.logger.Printf("Callback missing job id; payload keys: %v", payload)
+		h.sendError(w, http.StatusBadRequest, "missing job id")
+		return
+	}
+	log.Printf("Callback payload received for JobId: %v", jobID)
+
+	// Ensure the state machine is available
+	if h.jobStateMachine == nil {
+		h.logger.Printf("No job state machine configured to handle callback for job %s", jobID)
+		h.sendError(w, http.StatusInternalServerError, "server not configured to handle callbacks")
+		return
+	}
+
+	// Delegate the callback processing to the JobStateMachine which will route to the registered processor.
+	h.logger.Printf("Callback received for job %s - delegating to JobStateMachine", jobID)
+	if err := h.jobStateMachine.HandleEvent(r.Context(), jobID, services.EventCallbackReceipt, payload); err != nil {
+		h.logger.Printf("Failed to handle callback for job %s: %v", jobID, err)
+		h.sendError(w, http.StatusInternalServerError, fmt.Sprintf("failed to process callback: %v", err))
+		return
+	}
+	// Confirm state machine handled the callback
+	h.logger.Printf("JobStateMachine processed callback for job %s successfully", jobID)
+
+	// Acknowledge success
+	h.sendJSON(w, http.StatusOK, map[string]string{
+		"status": "ok",
+		"job_id": jobID,
+	})
 }
 
 // DocumentListResponse represents a list of documents response

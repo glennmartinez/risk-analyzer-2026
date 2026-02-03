@@ -28,6 +28,10 @@ type Document struct {
 	// LLM metadata
 	LLMProvider string `json:"llm_provider,omitempty"`
 	LLMModel    string `json:"llm_model,omitempty"`
+
+	// Source tracking for multi-source support
+	SourceType ContentSourceType `json:"source_type,omitempty"`
+	SourceID   string            `json:"source_id,omitempty"`
 }
 
 // DocumentStatus represents the status of a document

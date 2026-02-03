@@ -299,7 +299,19 @@ func (w *UploadWorker) processJobInternal(ctx context.Context, job *repositories
 		return fmt.Errorf("embedding count mismatch: got %d, expected %d", len(embeddingResult.Embeddings), len(chunkResult.Chunks))
 	}
 
-	// Step 4: Store in vector database
+	// Step 4: Ensure collection exists before storing
+	exists, err := w.vectorRepo.CollectionExists(ctx, payload.Collection)
+	if err != nil {
+		return fmt.Errorf("failed to check collection existence: %w", err)
+	}
+	if !exists {
+		if err := w.vectorRepo.CreateCollection(ctx, payload.Collection, nil); err != nil {
+			return fmt.Errorf("failed to create collection: %w", err)
+		}
+		w.logger.Info("Created collection: %s", payload.Collection)
+	}
+
+	// Step 5: Store in vector database
 	chunks := make([]*repositories.Chunk, len(chunkResult.Chunks))
 	for i := range chunkResult.Chunks {
 		// Build metadata including extracted metadata if available

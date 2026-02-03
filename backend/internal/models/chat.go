@@ -20,17 +20,17 @@ type ChatResponse struct {
 
 // RAGChatRequest represents a chat request with automatic document retrieval
 type RAGChatRequest struct {
-	Message        string        `json:"message"`           // The current user message
-	History        []ChatMessage `json:"history,omitempty"` // Previous conversation history
-	UseRAG         bool          `json:"use_rag,omitempty"` // Whether to use RAG (default: true)
+	Message        string        `json:"message"`                   // The current user message
+	History        []ChatMessage `json:"history,omitempty"`         // Previous conversation history
+	UseRAG         bool          `json:"use_rag,omitempty"`         // Whether to use RAG (default: true)
 	MaxChunks      int           `json:"max_chunks,omitempty"`      // Maximum chunks to retrieve (default: 3)
 	CollectionName string        `json:"collection_name,omitempty"` // Vector DB collection to search (default: "documents")
 }
 
 // RAGChatResponse represents a response with retrieved context information
 type RAGChatResponse struct {
-	Message string            `json:"message"`          // The assistant's response
-	Status  string            `json:"status"`           // "success" or "error"
+	Message string            `json:"message"`           // The assistant's response
+	Status  string            `json:"status"`            // "success" or "error"
 	Context []RAGContextChunk `json:"context,omitempty"` // Retrieved document chunks used for context
 	Query   string            `json:"query,omitempty"`   // The search query used
 }
