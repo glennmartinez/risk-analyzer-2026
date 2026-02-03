@@ -26,6 +26,10 @@ export function useSearchQuery() {
         top_k: request.top_k.toString(),
       });
 
+      if (request.collection) {
+        queryParams.append("collection", request.collection);
+      }
+
       try {
         const response = await apiClient.searchQuery(queryParams);
         const searchQueryResponse = {

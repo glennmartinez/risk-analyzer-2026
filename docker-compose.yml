@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   mysql:
@@ -10,12 +10,22 @@ services:
       MYSQL_USER: risk_user
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-risk_pass}
     ports:
-      - "3307:3306"  # Use non-standard port externally to avoid conflicts
+      - "3307:3306" # Use non-standard port externally to avoid conflicts
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql  # Optional init script
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql # Optional init script
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD:-rootpassword}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,7 +41,11 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD:-risk_pass}
       DB_DATABASE: risk_analyzer
       PORT: 8080
-      PYTHON_BACKEND_URL: http://python-backend:8000
+      PYTHON_BACKEND_URL: http://python-backend:8001
+      CHROMA_HOST: chromadb
+      CHROMA_PORT: 8000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "8080:8080"
     depends_on:
@@ -50,7 +64,7 @@ services:
       - PERSIST_DIRECTORY=/chroma/chroma
       - ANONYMIZED_TELEMETRY=FALSE
     ports:
-      - "8001:8000"
+      - "8000:8000" # ChromaDB API (used by Go backend for vector storage)
     volumes:
       - chroma_data:/chroma/chroma
     healthcheck:
@@ -60,25 +74,42 @@ services:
       retries: 5
       start_period: 10s
 
+  redis:
+    image: redis:7.2
+    container_name: risk_analyzer_redis
+    ports:
+      - "6379:6379" # Redis (used by Go backend for document/job registry)
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   python-backend:
     build: ./python-backend
     container_name: risk_analyzer_python
     environment:
-      PORT: 8000
+      PORT: 8001 # Run Python backend on different port to avoid conflict with ChromaDB
       UPLOAD_DIR: /app/uploads
       CHROMA_HOST: chromadb
       CHROMA_PORT: 8000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       GO_BACKEND_URL: http://app:8080
       CORS_ORIGINS: '["http://localhost:8080", "http://localhost:5173", "http://app:8080"]'
     ports:
-      - "8000:8000"
+      - "8001:8001" # Python compute backend (stateless: parse, chunk, embed)
     volumes:
       - python_uploads:/app/uploads
     depends_on:
       chromadb:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -88,3 +119,4 @@ volumes:
   mysql_data:
   python_uploads:
   chroma_data:
+  redis_data:

@@ -12,14 +12,15 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     File,
+    Form,
     HTTPException,
     Query,
     UploadFile,
 )
 from fastapi.responses import JSONResponse
 
-from ..config import Settings, get_settings
-from ..models import (
+from ...config import Settings, get_settings
+from ...models import (
     ChunkedDocument,
     ChunkingStrategy,
     ErrorResponse,
@@ -27,7 +28,12 @@ from ..models import (
     ProcessingRequest,
     ProcessingResponse,
 )
-from ..services import DocumentChunker, DocumentParser, VectorStoreService
+from ...services import (
+    DocumentChunker,
+    DocumentParser,
+    DocumentRegistry,
+    VectorStoreService,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -46,6 +52,10 @@ def get_vector_store():
     return VectorStoreService()
 
 
+def get_registry():
+    return DocumentRegistry()
+
+
 @router.post(
     "/upload",
     response_model=ProcessingResponse,
@@ -55,15 +65,21 @@ def get_vector_store():
 )
 async def upload_document(
     file: UploadFile = File(...),
-    chunking_strategy: ChunkingStrategy = Query(default=ChunkingStrategy.SENTENCE),
-    chunk_size: int = Query(default=512, ge=100, le=4096),
-    chunk_overlap: int = Query(default=50, ge=0, le=500),
-    store_in_vector_db: bool = Query(default=False),
-    collection_name: Optional[str] = Query(default=None),
+    chunking_strategy: ChunkingStrategy = Form(default=ChunkingStrategy.SENTENCE),
+    chunk_size: int = Form(default=512, ge=100, le=4096),
+    chunk_overlap: int = Form(default=50, ge=0, le=500),
+    store_in_vector_db: bool = Form(default=False),
+    extract_tables: bool = Form(default=True),
+    extract_figures: bool = Form(default=True),
+    extract_metadata: bool = Form(default=False),
+    num_questions: int = Form(default=3, ge=1, le=10),
+    max_pages: int = Form(default=30, ge=1, le=500),
+    collection_name: Optional[str] = Form(default=None),
     settings: Settings = Depends(get_settings),
     parser: DocumentParser = Depends(get_parser),
     chunker: DocumentChunker = Depends(get_chunker),
     vector_store: VectorStoreService = Depends(get_vector_store),
+    registry: DocumentRegistry = Depends(get_registry),
 ):
     """
     Process an uploaded document:
@@ -108,6 +124,8 @@ async def upload_document(
             strategy=chunking_strategy,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
+            extract_metadata=extract_metadata,
+            num_questions=num_questions,
         )
 
         # Step 3: Optionally store in vector DB
@@ -116,6 +134,28 @@ async def upload_document(
             logger.info("Storing chunks in vector DB")
             vector_store.store_chunks(chunked_doc, collection_name)
             vector_db_stored = True
+
+            # Register in Redis with all request parameters
+            reg_metadata = {
+                "filename": file.filename,
+                "chunk_count": chunked_doc.total_chunks,
+                "collection": collection_name or settings.chroma_collection_name,
+                "file_size": len(file_bytes),
+                "stored_in_vector_db": True,
+                "chunking_strategy": chunking_strategy.value,
+                "chunk_size": chunk_size,
+                "chunk_overlap": chunk_overlap,
+                "extract_metadata": extract_metadata,
+                "num_questions": num_questions,
+                "max_pages": max_pages,
+                "llm_provider": settings.llm_provider,
+                "llm_model": settings.llm_model,
+            }
+            logger.info(f"Registering document metadata in Redis: {reg_metadata}")
+
+            registry.register_document(
+                document_id=chunked_doc.document_id, metadata=reg_metadata
+            )
 
         processing_time = time.time() - start_time
 
@@ -205,15 +245,58 @@ async def delete_document(
     document_id: str,
     collection_name: Optional[str] = None,
     vector_store: VectorStoreService = Depends(get_vector_store),
+    registry: DocumentRegistry = Depends(get_registry),
 ):
-    """Delete a document's chunks from the vector store"""
+    """Delete a document's chunks from the vector store and Redis registry"""
 
+    # Delete from vector store
     deleted_count = vector_store.delete_document(document_id, collection_name)
+
+    # Delete from Redis registry
+    redis_deleted = registry.delete_document(document_id)
 
     return {
         "success": True,
         "document_id": document_id,
         "deleted_chunks": deleted_count,
+        "deleted_from_registry": redis_deleted,
+    }
+
+
+@router.delete(
+    "/collection/{collection_name}",
+    summary="Delete a collection",
+    description="Delete an entire collection and all its documents from vector store and Redis",
+)
+async def delete_collection(
+    collection_name: str,
+    vector_store: VectorStoreService = Depends(get_vector_store),
+    registry: DocumentRegistry = Depends(get_registry),
+):
+    """Delete an entire collection and clean up Redis registry"""
+
+    # First, get all documents in this collection so we can clean up Redis
+    documents = vector_store.list_documents(collection_name=collection_name)
+
+    # Delete each document from Redis
+    redis_deleted_count = 0
+    for doc in documents:
+        if registry.delete_document(doc["document_id"]):
+            redis_deleted_count += 1
+
+    # Delete the collection from vector store
+    try:
+        vector_store.chroma_client.delete_collection(collection_name)
+        collection_deleted = True
+    except Exception as e:
+        logger.warning(f"Error deleting collection '{collection_name}': {e}")
+        collection_deleted = False
+
+    return {
+        "success": collection_deleted,
+        "collection_name": collection_name,
+        "documents_removed_from_registry": redis_deleted_count,
+        "total_documents": len(documents),
     }
 
 
@@ -254,6 +337,7 @@ async def process_example_pdf(
     parser: DocumentParser = Depends(get_parser),
     chunker: DocumentChunker = Depends(get_chunker),
     vector_store: VectorStoreService = Depends(get_vector_store),
+    registry: DocumentRegistry = Depends(get_registry),
 ):
     """
     Process the bundled example PDF through the full pipeline:
@@ -298,6 +382,18 @@ async def process_example_pdf(
             vector_store.store_chunks(chunked_doc, collection_name)
             vector_db_stored = True
 
+            # Register in Redis
+            registry.register_document(
+                document_id=chunked_doc.document_id,
+                metadata={
+                    "filename": example_pdf_path.name,
+                    "chunk_count": chunked_doc.total_chunks,
+                    "collection": collection_name or settings.chroma_collection_name,
+                    "stored_in_vector_db": True,
+                    "is_example": True,
+                },
+            )
+
         processing_time = time.time() - start_time
 
         return ProcessingResponse(
@@ -335,16 +431,15 @@ async def get_collection_stats(
 
 @router.get(
     "/list",
-    summary="List all documents in the vector store",
-    description="Get a list of all unique documents with their metadata and chunk counts",
+    summary="List all processed documents",
+    description="Get a list of all documents from Redis registry",
 )
 async def list_documents(
-    collection_name: Optional[str] = Query(default=None),
-    vector_store: VectorStoreService = Depends(get_vector_store),
+    registry: DocumentRegistry = Depends(get_registry),
 ):
-    """List all documents stored in the vector database"""
+    """List all documents registered in the system"""
     try:
-        documents = vector_store.list_documents(collection_name)
+        documents = registry.list_documents()
         return {
             "documents": documents,
             "total": len(documents),
@@ -352,6 +447,7 @@ async def list_documents(
     except Exception as e:
         logger.exception(f"Error listing documents: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.get(
@@ -379,4 +475,25 @@ async def get_chunks(
         return result
     except Exception as e:
         logger.exception(f"Error getting chunks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get(
+    "/vector",
+    summary="List all documents in vector store",
+    description="Get a list of all unique documents stored in the vector database",
+)
+async def list_vector_documents(
+    collection_name: Optional[str] = Query(default=None),
+    vector_store: VectorStoreService = Depends(get_vector_store),
+):
+    """List all documents stored in the vector database"""
+    try:
+        documents = vector_store.list_documents(collection_name=collection_name)
+        return {
+            "documents": documents,
+            "total": len(documents),
+            "collection": collection_name or "all",
+        }
+    except Exception as e:
+        logger.exception(f"Error listing vector documents: {e}")
         raise HTTPException(status_code=500, detail=str(e))

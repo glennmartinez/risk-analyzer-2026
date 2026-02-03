@@ -60,7 +60,7 @@ class DocumentParser:
         Returns:
             ParsedDocument with extracted content and metadata
         """
-        file_path = Path(file_path)
+        file_path = Path(file_path).absolute()
 
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -83,10 +83,11 @@ class DocumentParser:
 
         # Try Docling first, fall back to PyMuPDF if it fails
         try:
+            # Use page_range to limit processing to first N pages
             if self.settings.max_pdf_pages > 0:
                 result = self.converter.convert(
                     str(file_path),
-                    max_num_pages=self.settings.max_pdf_pages,
+                    page_range=(1, self.settings.max_pdf_pages),
                     raises_on_error=False,
                 )
             else:
@@ -276,15 +277,20 @@ class DocumentParser:
         pages = []
 
         try:
-            if hasattr(doc, "pages"):
-                for idx, page in enumerate(doc.pages):
+            if hasattr(doc, "pages") and doc.pages:
+                # doc.pages is a dict {page_no: PageItem}
+                # PageItem doesn't have text directly - text is at document level
+                # We store page metadata and can use markdown_text/raw_text for content
+                for page_no, page in doc.pages.items():
                     page_data = {
-                        "page_number": idx + 1,
-                        "text": page.export_to_text()
-                        if hasattr(page, "export_to_text")
-                        else None,
+                        "page_number": page_no,
+                        "width": page.size.width if hasattr(page, "size") else None,
+                        "height": page.size.height if hasattr(page, "size") else None,
                     }
                     pages.append(page_data)
+
+                # Sort by page number
+                pages.sort(key=lambda p: p["page_number"])
         except Exception as e:
             logger.warning(f"Error extracting pages: {e}")
 

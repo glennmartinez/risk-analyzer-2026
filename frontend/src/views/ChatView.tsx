@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useChat } from "../api/hooks";
 import type { ChatMessage } from "../api/hooks";
 

@@ -8,7 +8,12 @@ interface UseRagChatState {
   lastResponse?: RAGChatResponse;
 }
 
-export function useRagChat() {
+interface UseRagChatConfig {
+  collection_name?: string;
+  max_chunks?: number;
+}
+
+export function useRagChat(config?: UseRagChatConfig) {
   const [state, setState] = useState<UseRagChatState>({
     loading: false,
     error: null,
@@ -27,7 +32,8 @@ export function useRagChat() {
         const request: RAGChatRequest = {
           message,
           history: messages,
-          max_chunks: 5,
+          max_chunks: config?.max_chunks || 5,
+          collection_name: config?.collection_name,
         };
 
         const response = await apiClient.ragChat(request);
@@ -50,7 +56,7 @@ export function useRagChat() {
         return null;
       }
     },
-    [messages],
+    [messages, config?.collection_name, config?.max_chunks],
   );
 
   const clearHistory = useCallback(() => {

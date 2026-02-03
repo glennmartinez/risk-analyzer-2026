@@ -10,13 +10,33 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routes import documents_router, health_router, rag_router, search_router
+from .routes import (
+    chunk_router,
+    documents_router,
+    embed_router,
+    health_router,
+    metadata_router,
+    parse_router,
+    process_callback_router,
+    rag_router,
+    search_router,
+)
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# Suppress verbose third-party library logging
+logging.getLogger("docling").setLevel(logging.WARNING)
+logging.getLogger("docling_core").setLevel(logging.WARNING)
+logging.getLogger("docling_parse").setLevel(logging.WARNING)
+logging.getLogger("pypdfium2").setLevel(logging.WARNING)
+logging.getLogger("PIL").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 
 @asynccontextmanager
@@ -48,6 +68,14 @@ This service provides:
 - **Vector Storage** with ChromaDB - semantic search capabilities
 
 ### Endpoints:
+
+**Stateless Compute Endpoints (New - Pure Functions):**
+- `/parse/document` - Parse document to extract text (no persistence)
+- `/chunk/text` - Chunk text into smaller pieces (no persistence)
+- `/embed/text` - Generate embeddings for text (no persistence)
+- `/metadata/extract` - Extract metadata using LLM (no persistence)
+
+**Legacy Endpoints (With Persistence):**
 - `/documents/upload` - Upload and process documents
 - `/documents/parse` - Parse without chunking
 - `/documents/chunk` - Parse and chunk without storing
@@ -70,6 +98,15 @@ This service provides:
 
     # Include routers
     app.include_router(health_router)
+
+    # New stateless compute routers (Phase 2)
+    app.include_router(parse_router)
+    app.include_router(process_callback_router)
+    app.include_router(chunk_router)
+    app.include_router(embed_router)
+    app.include_router(metadata_router)
+
+    # Legacy routers (will be deprecated)
     app.include_router(documents_router)
     app.include_router(search_router)
     app.include_router(rag_router)
